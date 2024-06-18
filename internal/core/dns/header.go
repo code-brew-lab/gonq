@@ -1,15 +1,14 @@
 package dns
 
 import (
+	"encoding/binary"
 	"fmt"
-
-	"github.com/code-brew-lab/gonq.git/internal/pkg/bitwise"
 )
 
 type (
 	Header struct { // 96 bits total
 		ID                    uint16 // [Req + Resp] 16 bit unique request id. Same for the following response.
-		Flags                 uint16
+		Flags                 Flags
 		QuestionCount         uint16 // [Req] Number of entries inside the question.
 		AnswerCount           uint16 // [Resp] Number of response entries from DNS server.
 		NameServerCount       uint16 // [Req] Number of name server resource records in the authority records section.
@@ -17,33 +16,84 @@ type (
 	}
 
 	Flags struct { // 16 bits total.
-		IsQuery         bitwise.Bit    // [Req + Resp] Is the message query or response. Query = False; Response = True;
-		OperationCode   [4]bitwise.Bit // [Req] A four bit field that specifies kind of query in this message.
-		IsAuthoritative bitwise.Bit    // [Resp] Is response from authoritative dns server. Authoritative = True;
-		IsTruncated     bitwise.Bit    // [Resp] Is response truncated or not.
-		IsRecursive     bitwise.Bit    // [Req] Ask DNS server to recursively ask for the domain.
-		CanRecursive    bitwise.Bit    // [Resp] Shows if recursion available for DNS server.
-		FutureUse       [3]bitwise.Bit // [Req] A three bits future use field.
-		ResponseCode    [4]bitwise.Bit // [Resp] A four bits response codes.
+		IsQuery         bool  // [Req + Resp] Is the message query or response. Query = False; Response = True;
+		OperationCode   uint8 // [Req] A four-bit field that specifies the kind of query in this message.
+		IsAuthoritative bool  // [Resp] Is the response from authoritative DNS server. Authoritative = True;
+		IsTruncated     bool  // [Resp] Is the response truncated or not.
+		IsRecursive     bool  // [Req] Ask DNS server to recursively ask for the domain.
+		CanRecursive    bool  // [Resp] Shows if recursion is available for DNS server.
+		FutureUse       uint8 // [Req] A three-bit future use field.
+		ResponseCode    uint8 // [Resp] A four-bit response code.
 	}
 )
 
-func (f Flags) BinaryMarshaler() ([]byte, error) {
-	byteSet := bitwise.NewSet()
+// NewHeader creates a new Header instance with default values
+func NewHeader(flags Flags, questionCount int) *Header {
+	return &Header{
+		ID:                    0,
+		Flags:                 flags,
+		QuestionCount:         uint16(questionCount),
+		AnswerCount:           0,
+		NameServerCount:       0,
+		AdditionalRecordCount: 0,
+	}
+}
 
-	byteSet.Add(f.IsQuery)
-	byteSet.AddSet(f.OperationCode[:])
-	byteSet.Add(f.IsAuthoritative)
-	byteSet.Add(f.IsTruncated)
-	byteSet.Add(f.IsRecursive)
-	byteSet.Add(f.CanRecursive)
-	byteSet.AddSet(f.FutureUse[:])
-	byteSet.AddSet(f.ResponseCode[:])
+// NewFlags creates a new Flags instance with default values
+func NewFlags(isQuery, isRecursive bool) Flags {
+	return Flags{
+		IsQuery:         isQuery,
+		OperationCode:   0,
+		IsAuthoritative: false,
+		IsTruncated:     false,
+		IsRecursive:     isRecursive,
+		CanRecursive:    false,
+		FutureUse:       0,
+		ResponseCode:    0,
+	}
+}
 
-	bytes, err := byteSet.ToBytes()
+func (h Header) BinaryMarshaler() ([]byte, error) {
+	var bytes [12]byte
+	flags, err := h.Flags.BinaryMarshaler()
 	if err != nil {
 		return nil, fmt.Errorf("dns: %v", err)
 	}
+
+	binary.BigEndian.PutUint16(bytes[0:2], h.ID)
+	copy(bytes[2:4], flags)
+	binary.BigEndian.PutUint16(bytes[4:6], h.QuestionCount)
+	binary.BigEndian.PutUint16(bytes[6:8], h.AnswerCount)
+	binary.BigEndian.PutUint16(bytes[8:10], h.NameServerCount)
+	binary.BigEndian.PutUint16(bytes[10:12], h.AdditionalRecordCount)
+
+	return bytes[:], nil
+}
+
+func (f Flags) BinaryMarshaler() ([]byte, error) {
+	var flags uint16
+
+	if f.IsQuery {
+		flags |= 1 << 15
+	}
+	flags |= uint16(f.OperationCode&0xF) << 11
+	if f.IsAuthoritative {
+		flags |= 1 << 10
+	}
+	if f.IsTruncated {
+		flags |= 1 << 9
+	}
+	if f.IsRecursive {
+		flags |= 1 << 8
+	}
+	if f.CanRecursive {
+		flags |= 1 << 7
+	}
+	flags |= uint16(f.FutureUse&0x7) << 4
+	flags |= uint16(f.ResponseCode & 0xF)
+
+	bytes := make([]byte, 2)
+	binary.BigEndian.PutUint16(bytes, flags)
 
 	return bytes, nil
 }

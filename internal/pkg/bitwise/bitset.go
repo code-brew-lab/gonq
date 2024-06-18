@@ -43,7 +43,7 @@ func (bs *BitSet) ToBytes() ([]byte, error) {
 	bytes := make([]byte, byteCount)
 
 	for i, bit := range bitSet {
-		if bit {
+		if bit == One {
 			byteIndex := uint8(i / 8)      // Determine which byte this bit belongs to
 			bitIndex := uint8(7 - (i % 8)) // Determine the position of the bit within the byte (from left)
 			byte := uint8(1 << bitIndex)   // Create a byte with the bit set at the correct position

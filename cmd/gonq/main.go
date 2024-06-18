@@ -5,22 +5,13 @@ import (
 	"log"
 
 	"github.com/code-brew-lab/gonq.git/internal/core/dns"
-	"github.com/code-brew-lab/gonq.git/internal/pkg/bitwise"
 )
 
 func main() {
-	flags := dns.Flags{
-		IsQuery:         bitwise.New(false),                                                                            // Query
-		OperationCode:   [4]bitwise.Bit{bitwise.New(false), bitwise.New(false), bitwise.New(true), bitwise.New(false)}, // Example: 0010
-		IsAuthoritative: bitwise.New(true),                                                                             // Authoritative
-		IsTruncated:     bitwise.New(false),                                                                            // Not Truncated
-		IsRecursive:     bitwise.New(true),                                                                             // Recursive
-		CanRecursive:    bitwise.New(true),                                                                             // Recursion Available
-		FutureUse:       [3]bitwise.Bit{bitwise.New(false), bitwise.New(false), bitwise.New(false)},                    // Future use: 000
-		ResponseCode:    [4]bitwise.Bit{bitwise.New(false), bitwise.New(true), bitwise.New(false), bitwise.New(true)},  // Example: 0101
-	}
+	flags := dns.NewFlags(true, true)
+	header := dns.NewHeader(flags, 1)
 
-	bytes, err := flags.BinaryMarshaler()
+	bytes, err := header.BinaryMarshaler()
 	if err != nil {
 		log.Fatalln(err)
 	}

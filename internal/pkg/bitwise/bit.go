@@ -1,11 +1,19 @@
 package bitwise
 
-// bit represents a single bit as a boolean.
-type Bit bool
+// Bit represents a single bit as a uint8.
+type Bit uint8
+
+const (
+	Zero Bit = 0
+	One  Bit = 1
+)
 
 // New returns a new bit initialized to the specified value.
 func New(value bool) Bit {
-	return Bit(value)
+	if value {
+		return One
+	}
+	return Zero
 }
 
 // Invert flips the value of the bit.
@@ -13,14 +21,10 @@ func (b *Bit) Invert() {
 	if b == nil {
 		return
 	}
-	*b = !*b
+	*b = 1 - *b
 }
 
 // Value returns the current value of the bit.
 func (b Bit) Value() uint8 {
-	if bool(b) {
-		return 1
-	}
-
-	return 0
+	return uint8(b)
 }
