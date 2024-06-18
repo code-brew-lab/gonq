@@ -11,7 +11,7 @@ type cmdArgs struct {
 func setupFlags() (*cmdArgs, error) {
 	args := new(cmdArgs)
 
-	flag.StringVar(&args.host, "d", "google.com", "name of the domain")
+	flag.StringVar(&args.host, "", "google.com", "name of the domain")
 	flag.Parse()
 
 	return args, nil

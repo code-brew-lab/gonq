@@ -1,74 +1,35 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
 	"log"
-	"net"
+
+	"github.com/code-brew-lab/gonq.git/internal/core/dns"
+	"github.com/code-brew-lab/gonq.git/internal/pkg/bitwise"
 )
 
-type DNSRequest struct {
-	Header    DNSHeader
-	Questions []DNSQuestion
-}
-
-type DNSHeader struct {
-	ID      uint16 // [Req + Resp] 16 bit unique request id. Same for the following response.
-	QR      bool   // [Req + Resp] Is the message query or response. Query = False; Response = True;
-	OPCODE  uint8  // [Req] A four bit field that specifies kind of query in this message.
-	AA      bool   // [Resp] Is response from authoritative dns server. Authoritative = True;
-	TC      bool   // [Resp] Is response truncated or not.
-	RD      bool   // [Req] Ask DNS server to recursively ask for the domain.
-	RA      bool   // [Resp] Shows if recursion available for DNS server.
-	Z       byte   // [Req] A three bit future use field.
-	RCODE   byte   // [Resp] A four bits response codes.
-	QDCOUNT uint16 // [Req] Number of entries inside the question.
-	ANCOUNT uint16 // [Resp] Number of response entries from DNS server.
-	NSCOUNT uint16 // [Req] Number of name server resource records in the authority records section.
-	ARCOUNT uint16 // [Req] Number of resource records in the additional records section.
-}
-
-type DNSQuestion struct {
-	QNAME  [2]byte
-	QTYPE  [2]byte // Specifies the type of the query. Ex: CNAME, A, MX, NS
-	QCLASS [2]byte // Specifies the class of the query.
-}
-
 func main() {
-	dnsIP := net.ParseIP("8.8.8.8")
-	if dnsIP == nil {
-		log.Fatalln("Invalid IP")
+	flags := dns.Flags{
+		IsQuery:         bitwise.New(false),                                                                            // Query
+		OperationCode:   [4]bitwise.Bit{bitwise.New(false), bitwise.New(false), bitwise.New(true), bitwise.New(false)}, // Example: 0010
+		IsAuthoritative: bitwise.New(true),                                                                             // Authoritative
+		IsTruncated:     bitwise.New(false),                                                                            // Not Truncated
+		IsRecursive:     bitwise.New(true),                                                                             // Recursive
+		CanRecursive:    bitwise.New(true),                                                                             // Recursion Available
+		FutureUse:       [3]bitwise.Bit{bitwise.New(false), bitwise.New(false), bitwise.New(false)},                    // Future use: 000
+		ResponseCode:    [4]bitwise.Bit{bitwise.New(false), bitwise.New(true), bitwise.New(false), bitwise.New(true)},  // Example: 0101
 	}
 
-	rootDNS := &net.UDPAddr{
-		IP:   dnsIP,
-		Port: 53,
-	}
-
-	conn, err := net.DialUDP("udp", nil, rootDNS)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer conn.Close()
-
-	msg, err := hex.DecodeString("064f0120000100000000000106676f6f676c6503636f6d00000100010000291000000000000000")
+	bytes, err := flags.BinaryMarshaler()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	_, err = conn.Write(msg)
-	if err != nil {
-		log.Fatalln(err)
+	for i := 0; i < len(bytes); i++ {
+		fmt.Printf("%08b\n", bytes[i])
 	}
-
-	buff := make([]byte, 1024)
-	for {
-		n, _, err := conn.ReadFromUDP(buff)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		fmt.Printf("Bytes[%d] Received: %x\n", n, buff[:n])
-	}
-
 }
+
+// Wireshark response: 5c6381800001000500000000076773702d73736c086c732d6170706c6503636f6d06616b61646e73036e65740000010001c00c000500010000001800110e6773702d73736c2d67656f6d6170c014c03d0005000100000032001708677370782d73736c026c73056170706c6503636f6d00c05a00050001000004ff0013066765742d62780167076161706c696d67c06cc07d000100010000000d000411fd49cfc07d000100010000000d000411fd49d0
+
+// Gonq response: 5c6381800001000500000000076773702d73736c086c732d6170706c6503636f6d06616b61646e73036e65740000010001c00c000500010000001300110e6773702d73736c2d67656f6d6170c014c03d0005000100000031001708677370782d73736c026c73056170706c6503636f6d00c05a0005000100000e010013066765742d62780167076161706c696d67c06cc07d0001000100000004000411fd49d0c07d0001000100000004000411fd49cf
