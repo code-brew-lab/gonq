@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	flags := dns.NewFlagsBuilder().Build()
+	flags := dns.NewFlagsBuilder().SetIsTruncated(true).Build()
 	header := dns.NewHeaderBuilder().SetID(0).SetFlags(flags).Build()
 
 	bytes, err := header.BinaryMarshaler()
