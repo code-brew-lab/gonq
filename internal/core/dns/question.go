@@ -56,16 +56,13 @@ func (q Question) toBytes() []byte {
 	var (
 		bytes []byte
 		be    = binary.BigEndian
-		skip  = 0
 	)
 
 	for _, qn := range q.questionNames {
 		bytes = append(bytes, qn.toBytes()...)
-		skip += (1 + len(qn.data))
 	}
 
 	bytes = append(bytes, 0)
-	skip += 1
 
 	typeAndClass := make([]byte, 4)
 	be.PutUint16(typeAndClass[0:2], uint16(q.questionType))
