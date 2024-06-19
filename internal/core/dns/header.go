@@ -73,16 +73,20 @@ func (bh *HeaderBuilder) Build() *Header {
 	return bh.Header
 }
 
-func (h Header) BinaryMarshaler() ([]byte, error) {
+func (h *Header) IncrementQuestionCount() {
+	h.questionCount += 1
+}
+
+func (h *Header) toBytes() []byte {
 	var bytes [12]byte
-	bigEndian := binary.BigEndian
+	be := binary.BigEndian
 
-	bigEndian.PutUint16(bytes[0:2], h.id)
-	bigEndian.PutUint16(bytes[2:4], h.flags.toUint16())
-	bigEndian.PutUint16(bytes[4:6], h.questionCount)
-	bigEndian.PutUint16(bytes[6:8], h.answerCount)
-	bigEndian.PutUint16(bytes[8:10], h.nameServerCount)
-	bigEndian.PutUint16(bytes[10:12], h.additionalRecordCount)
+	be.PutUint16(bytes[0:2], h.id)
+	be.PutUint16(bytes[2:4], h.flags.toUint16())
+	be.PutUint16(bytes[4:6], h.questionCount)
+	be.PutUint16(bytes[6:8], h.answerCount)
+	be.PutUint16(bytes[8:10], h.nameServerCount)
+	be.PutUint16(bytes[10:12], h.additionalRecordCount)
 
-	return bytes[:], nil
+	return bytes[:]
 }
