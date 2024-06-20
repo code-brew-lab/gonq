@@ -41,6 +41,10 @@ func NewFlagsBuilder() *FlagsBuilder {
 	}
 }
 
+func parseFlags(flags [2]byte) (*Flags, error) {
+	return &Flags{}, nil
+}
+
 func newFlags() *Flags {
 	return &Flags{
 		isQuery:       true,

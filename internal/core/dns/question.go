@@ -8,8 +8,8 @@ import (
 type (
 	question struct {
 		questionNames []questionName
-		questionType  QuestionType  // Specifies the type of the query. Ex: CNAME, A, MX, NS
-		questionClass QuestionClass // Specifies the class of the query.
+		questionType  RecordType  // Specifies the type of the query. Ex: CNAME, A, MX, NS
+		questionClass RecordClass // Specifies the class of the query.
 	}
 
 	questionName struct {
@@ -17,19 +17,20 @@ type (
 		data        []byte
 	}
 
-	QuestionType  uint16
-	QuestionClass uint16
+	RecordType  uint16
+	RecordClass uint16
 )
 
 const (
-	AType  QuestionType = 1  // A record type.
-	NSType QuestionType = 2  // Mail server record type.
-	MXType QuestionType = 15 // Name server record type.
+	A     RecordType = 1  // A record type.
+	NS    RecordType = 2  // Mail server record type.
+	CNAME RecordType = 5  // Canonical name of the domain.
+	MX    RecordType = 15 // Name server record type.
 
-	INetClass QuestionClass = 1 // Internet Address class.
+	INET RecordClass = 1 // Internet Address class.
 )
 
-func newQuestion(domain string, qType QuestionType, qClass QuestionClass) question {
+func newQuestion(domain string, rType RecordType, rClass RecordClass) question {
 	var questionNames []questionName
 
 	domainParts := strings.Split(domain, ".")
@@ -41,8 +42,8 @@ func newQuestion(domain string, qType QuestionType, qClass QuestionClass) questi
 
 	return question{
 		questionNames,
-		qType,
-		qClass,
+		rType,
+		rClass,
 	}
 }
 

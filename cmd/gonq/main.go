@@ -12,7 +12,7 @@ import (
 
 func main() {
 	req := dns.NewRequest()
-	req.AddQuestion("google.com", dns.AType, dns.INetClass)
+	req.AddQuestion("google.com", dns.A, dns.INET)
 
 	reqBytes, err := req.BinaryMarshaler()
 	if err != nil {

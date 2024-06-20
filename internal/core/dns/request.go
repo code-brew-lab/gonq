@@ -31,8 +31,8 @@ func NewRequestWithHeader(header *Header) (*Request, error) {
 	}, nil
 }
 
-func (r *Request) AddQuestion(domain string, qType QuestionType, qClass QuestionClass) {
-	question := newQuestion(domain, qType, qClass)
+func (r *Request) AddQuestion(domain string, rType RecordType, rClass RecordClass) {
+	question := newQuestion(domain, rType, rClass)
 	r.questions = append(r.questions, question)
 	r.header.IncrementQuestionCount()
 }

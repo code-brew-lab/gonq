@@ -27,6 +27,10 @@ func NewHeaderBuilder() *HeaderBuilder {
 	}
 }
 
+func parseHeader(header [12]byte) (*Header, error) {
+	return &Header{}, nil
+}
+
 func newHeader() *Header {
 	return &Header{}
 }
