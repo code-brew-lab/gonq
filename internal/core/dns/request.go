@@ -7,17 +7,27 @@ import (
 type (
 	Request struct {
 		header    *Header
-		questions []Question
+		questions []question
 	}
 )
 
-func NewRequest(header *Header) (*Request, error) {
+func NewRequest() *Request {
+	flags := NewFlagsBuilder().SetIsQuery(true).SetIsRecursive(true).Build()
+	header := NewHeaderBuilder().SetID(NewID()).SetFlags(flags).Build()
+
+	return &Request{
+		header: header,
+	}
+}
+
+func NewRequestWithHeader(header *Header) (*Request, error) {
 	if header == nil {
 		return nil, errors.New("dns: header is nil")
 	}
 
 	return &Request{
-		header: header,
+		header:    header,
+		questions: make([]question, 1),
 	}, nil
 }
 

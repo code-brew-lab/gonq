@@ -6,7 +6,7 @@ import (
 
 type (
 	Header struct { // 96 bits total
-		id                    uint16 // [Req + Resp]  Unique request id. Same for the following response.
+		id                    ID     // [Req + Resp]  Unique request id. Same for the following response.
 		flags                 *Flags // [Req + Resp]  See flags.go
 		questionCount         uint16 // [Req]         Number of entries inside the question.
 		answerCount           uint16 // [Resp]        Number of response entries from DNS server.
@@ -31,7 +31,7 @@ func newHeader() *Header {
 	return &Header{}
 }
 
-func (bh *HeaderBuilder) SetID(id uint16) *HeaderBuilder {
+func (bh *HeaderBuilder) SetID(id ID) *HeaderBuilder {
 	bh.id = id
 	return bh
 }
@@ -81,7 +81,7 @@ func (h *Header) toBytes() []byte {
 	var bytes [12]byte
 	be := binary.BigEndian
 
-	be.PutUint16(bytes[0:2], h.id)
+	be.PutUint16(bytes[0:2], h.id.toUint16())
 	be.PutUint16(bytes[2:4], h.flags.toUint16())
 	be.PutUint16(bytes[4:6], h.questionCount)
 	be.PutUint16(bytes[6:8], h.answerCount)

@@ -6,13 +6,13 @@ import (
 )
 
 type (
-	Question struct {
-		questionNames []QuestionName
+	question struct {
+		questionNames []questionName
 		questionType  QuestionType  // Specifies the type of the query. Ex: CNAME, A, MX, NS
 		questionClass QuestionClass // Specifies the class of the query.
 	}
 
-	QuestionName struct {
+	questionName struct {
 		bytesToRead uint8
 		data        []byte
 	}
@@ -29,8 +29,8 @@ const (
 	INetClass QuestionClass = 1 // Internet Address class.
 )
 
-func newQuestion(domain string, qType QuestionType, qClass QuestionClass) Question {
-	var questionNames []QuestionName
+func newQuestion(domain string, qType QuestionType, qClass QuestionClass) question {
+	var questionNames []questionName
 
 	domainParts := strings.Split(domain, ".")
 
@@ -39,20 +39,20 @@ func newQuestion(domain string, qType QuestionType, qClass QuestionClass) Questi
 		questionNames = append(questionNames, questionName)
 	}
 
-	return Question{
+	return question{
 		questionNames,
 		qType,
 		qClass,
 	}
 }
 
-func newQuestionName(domainPart string) QuestionName {
+func newQuestionName(domainPart string) questionName {
 	length := uint8(len(domainPart))
 
-	return QuestionName{length, []byte(domainPart)}
+	return questionName{length, []byte(domainPart)}
 }
 
-func (q Question) toBytes() []byte {
+func (q question) toBytes() []byte {
 	var (
 		bytes []byte
 		be    = binary.BigEndian
@@ -72,7 +72,7 @@ func (q Question) toBytes() []byte {
 	return bytes
 }
 
-func (qn QuestionName) toBytes() []byte {
+func (qn questionName) toBytes() []byte {
 	var bytes []byte
 
 	bytes = append(bytes, qn.bytesToRead)
