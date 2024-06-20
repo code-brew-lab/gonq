@@ -29,7 +29,7 @@ func main() {
 	defer conn.Close()
 
 	// Set a read deadline
-	conn.SetDeadline(time.Now().Add(5 * time.Second))
+	_ = conn.SetDeadline(time.Now().Add(5 * time.Second))
 
 	_, err = conn.Write(reqBytes)
 	if err != nil {

@@ -1,13 +1,13 @@
 package dns
 
-import "math/rand"
+import "math/rand/v2"
 
 type (
 	ID uint16
 )
 
 func NewID() ID {
-	id := uint16(rand.Int31())
+	id := uint16(rand.Uint32())
 	return ID(id)
 }
 
