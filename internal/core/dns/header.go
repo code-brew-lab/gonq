@@ -2,6 +2,9 @@ package dns
 
 import (
 	"encoding/binary"
+	"errors"
+	"fmt"
+	"strings"
 )
 
 type (
@@ -27,8 +30,38 @@ func NewHeaderBuilder() *HeaderBuilder {
 	}
 }
 
-func parseHeader(header [12]byte) (*Header, error) {
-	return &Header{}, nil
+func parseHeader(header []byte) (*Header, error) {
+	if len(header) != 12 {
+		return nil, errors.New("header should be 12 bytes")
+	}
+	be := binary.BigEndian
+
+	id := header[:2]
+	flags := header[2:4]
+
+	parsedID, err := ParseID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	parsedFlags, err := parseFlags(flags)
+	if err != nil {
+		return nil, err
+	}
+
+	qCount := be.Uint16(header[4:6])
+	aCount := be.Uint16(header[6:8])
+	nsCount := be.Uint16(header[8:10])
+	arCount := be.Uint16(header[10:12])
+
+	return &Header{
+		id:                    parsedID,
+		flags:                 parsedFlags,
+		questionCount:         qCount,
+		answerCount:           aCount,
+		nameServerCount:       nsCount,
+		additionalRecordCount: arCount,
+	}, nil
 }
 
 func newHeader() *Header {
@@ -77,8 +110,23 @@ func (bh *HeaderBuilder) Build() *Header {
 	return bh.Header
 }
 
-func (h *Header) IncrementQuestionCount() {
+func (h *Header) addQuestion() {
 	h.questionCount += 1
+}
+
+func (h *Header) string(indent int, char string) string {
+	i := strings.Repeat(char, indent)
+
+	var sb strings.Builder
+	sb.WriteString("Header {\n")
+	sb.WriteString(fmt.Sprintf("%sid: %v\n", i, h.id))
+	sb.WriteString(fmt.Sprintf("%sflags: %v\n", i, h.flags.string(indent+1, char)))
+	sb.WriteString(fmt.Sprintf("%squestionCount: %v\n", i, h.questionCount))
+	sb.WriteString(fmt.Sprintf("%sanswerCount: %v\n", i, h.answerCount))
+	sb.WriteString(fmt.Sprintf("%snameServerCount: %v\n", i, h.nameServerCount))
+	sb.WriteString(fmt.Sprintf("%sadditionalRecordCount: %v\n", i, h.additionalRecordCount))
+	sb.WriteString(fmt.Sprintf("%s}", i))
+	return sb.String()
 }
 
 func (h *Header) toBytes() []byte {

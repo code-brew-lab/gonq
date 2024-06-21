@@ -22,7 +22,7 @@ func NewRequest() *Request {
 
 func NewRequestWithHeader(header *Header) (*Request, error) {
 	if header == nil {
-		return nil, errors.New("dns: header is nil")
+		return nil, errors.New("dns.NewRequestWithHeader: header is nil")
 	}
 
 	return &Request{
@@ -34,10 +34,10 @@ func NewRequestWithHeader(header *Header) (*Request, error) {
 func (r *Request) AddQuestion(domain string, rType RecordType, rClass RecordClass) {
 	question := newQuestion(domain, rType, rClass)
 	r.questions = append(r.questions, question)
-	r.header.IncrementQuestionCount()
+	r.header.addQuestion()
 }
 
-func (r *Request) BinaryMarshaler() ([]byte, error) {
+func (r *Request) ToBytes() ([]byte, error) {
 	var bytes []byte
 
 	header := r.header

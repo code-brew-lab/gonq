@@ -14,7 +14,7 @@ func main() {
 	req := dns.NewRequest()
 	req.AddQuestion("google.com", dns.A, dns.INET)
 
-	reqBytes, err := req.BinaryMarshaler()
+	reqBytes, err := req.ToBytes()
 	if err != nil {
 		log.Fatalln("Error marshaling request:", err)
 	}
@@ -45,4 +45,12 @@ func main() {
 
 	// Print the response in hex format
 	fmt.Println("Response in hex:", hex.EncodeToString(buf[:n]))
+
+	resp, err := dns.ParseResponse(buf[:n])
+	if err != nil {
+		log.Fatalln("Error parsing response:", err)
+	}
+
+	fmt.Println(resp.String())
+
 }

@@ -1,5 +1,11 @@
 package dns
 
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
+
 type (
 	Flags struct { // 16 bits total.
 		isQuery         bool          // [Req + Resp]  Is the message query or response.
@@ -41,8 +47,35 @@ func NewFlagsBuilder() *FlagsBuilder {
 	}
 }
 
-func parseFlags(flags [2]byte) (*Flags, error) {
-	return &Flags{}, nil
+func parseFlags(bytes []byte) (*Flags, error) {
+	if len(bytes) != 2 {
+		return nil, errors.New("flags should be 2 bytes")
+	}
+
+	byte1 := bytes[0]
+	byte2 := bytes[1]
+	flags := new(Flags)
+
+	isQuery := (byte1 & 0x80) >> 7
+	operationCode := (byte1 & 0x78) >> 3
+	isAuthoritative := (byte1 & 0x04) >> 2
+	isTruncated := (byte1 & 0x02) >> 1
+	isRecursive := byte1 & 0x01
+
+	canRecursive := (byte2 & 0x80) >> 7
+	futureUse := (byte2 & 0x70) >> 4
+	responseCode := byte2 & 0x0F
+
+	flags.isQuery = isQuery == 0
+	flags.operationCode = OperationCode(operationCode)
+	flags.isAuthoritative = isAuthoritative == 1
+	flags.isTruncated = isTruncated == 1
+	flags.isRecursive = isRecursive == 1
+	flags.canRecursive = canRecursive == 1
+	flags.futureUse = uint8(futureUse)
+	flags.responseCode = ResponseCode(responseCode)
+
+	return flags, nil
 }
 
 func newFlags() *Flags {
@@ -100,6 +133,23 @@ func (fb *FlagsBuilder) AddError(err error) {
 
 func (fb *FlagsBuilder) Build() *Flags {
 	return fb.Flags
+}
+
+func (f *Flags) string(indent int, char string) string {
+	i := strings.Repeat(char, indent)
+
+	var sb strings.Builder
+	sb.WriteString("Flags {\n")
+	sb.WriteString(fmt.Sprintf("%sisQuery: %v\n", i, f.isQuery))
+	sb.WriteString(fmt.Sprintf("%soperationCode: %v\n", i, f.operationCode))
+	sb.WriteString(fmt.Sprintf("%sisAuthoritative: %v\n", i, f.isAuthoritative))
+	sb.WriteString(fmt.Sprintf("%sisTruncated: %v\n", i, f.isTruncated))
+	sb.WriteString(fmt.Sprintf("%sisRecursive: %v\n", i, f.isRecursive))
+	sb.WriteString(fmt.Sprintf("%scanRecursive: %v\n", i, f.canRecursive))
+	sb.WriteString(fmt.Sprintf("%sfutureUse: %v\n", i, f.futureUse))
+	sb.WriteString(fmt.Sprintf("%sresponseCode: %v\n", i, f.responseCode))
+	sb.WriteString(fmt.Sprintf("%s}", i))
+	return sb.String()
 }
 
 func (f *Flags) toUint16() uint16 {
