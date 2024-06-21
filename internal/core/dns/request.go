@@ -32,8 +32,7 @@ func NewRequestWithHeader(header *Header) (*Request, error) {
 }
 
 func (r *Request) AddQuestion(domain string, rType RecordType, rClass RecordClass) {
-	question := newQuestion(domain, rType, rClass)
-	r.questions = append(r.questions, question)
+	r.questions = append(r.questions, newQuestion(domain, rType, rClass))
 	r.header.addQuestion()
 }
 

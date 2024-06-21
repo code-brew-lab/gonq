@@ -1,9 +1,10 @@
 package dns
 
 import (
+	"crypto/rand"
 	"encoding/binary"
 	"errors"
-	"math/rand/v2"
+	"math/big"
 )
 
 type (
@@ -11,8 +12,11 @@ type (
 )
 
 func NewID() ID {
-	id := uint16(rand.Uint32())
-	return ID(id)
+	id, err := rand.Int(rand.Reader, big.NewInt(65535))
+	if err != nil {
+		return ID(0)
+	}
+	return ID(id.Uint64())
 }
 
 func ParseID(bytes []byte) (ID, error) {

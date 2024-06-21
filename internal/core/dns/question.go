@@ -2,46 +2,36 @@ package dns
 
 import (
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"strings"
 )
 
 type (
 	question struct {
-		questionNames []questionName
-		questionType  RecordType  // Specifies the type of the query. Ex: CNAME, A, MX, NS
-		questionClass RecordClass // Specifies the class of the query.
+		qNames []questionName
+		qType  RecordType  // Specifies the type of the query. Ex: CNAME, A, MX, NS
+		qClass RecordClass // Specifies the class of the query.
 	}
 
 	questionName struct {
 		bytesToRead uint8
 		data        []byte
 	}
-
-	RecordType  uint16
-	RecordClass uint16
-)
-
-const (
-	A     RecordType = 1  // A record type.
-	NS    RecordType = 2  // Mail server record type.
-	CNAME RecordType = 5  // Canonical name of the domain.
-	MX    RecordType = 15 // Name server record type.
-
-	INET RecordClass = 1 // Internet Address class.
 )
 
 func newQuestion(domain string, rType RecordType, rClass RecordClass) question {
-	var questionNames []questionName
+	var qNames []questionName
 
 	domainParts := strings.Split(domain, ".")
 
 	for _, domainPart := range domainParts {
 		questionName := newQuestionName(domainPart)
-		questionNames = append(questionNames, questionName)
+		qNames = append(qNames, questionName)
 	}
 
 	return question{
-		questionNames,
+		qNames,
 		rType,
 		rClass,
 	}
@@ -53,21 +43,82 @@ func newQuestionName(domainPart string) questionName {
 	return questionName{length, []byte(domainPart)}
 }
 
+func parseQuestion(bytes []byte) (question, int, error) {
+	var q question
+	be := binary.BigEndian
+
+	qNames, bytesRead, err := parseQuestionNames(bytes)
+	if err != nil {
+		return q, 0, err
+	}
+
+	if len(bytes) < bytesRead+4 {
+		return q, 0, errors.New("not enough bytes to parse the question")
+	}
+
+	q.qNames = qNames
+	q.qType = RecordType(be.Uint16(bytes[bytesRead : bytesRead+2]))
+	q.qClass = RecordClass(be.Uint16(bytes[bytesRead+2 : bytesRead+4]))
+
+	return q, bytesRead + 4, nil
+}
+
+func parseQuestionNames(bytes []byte) ([]questionName, int, error) {
+	var qNames []questionName
+	totalBytesRead := 0
+
+	for i := 0; i < len(bytes); {
+		bytesToRead := bytes[i]
+		if bytesToRead == 0 {
+			totalBytesRead = i + 1
+			break
+		}
+		if i+int(bytesToRead)+1 > len(bytes) {
+			return nil, 0, errors.New("invalid question name length")
+		}
+		qName := questionName{
+			bytesToRead: bytesToRead,
+			data:        bytes[i+1 : i+1+int(bytesToRead)],
+		}
+		qNames = append(qNames, qName)
+		i += int(bytesToRead) + 1
+	}
+
+	return qNames, totalBytesRead, nil
+}
+
+func (q question) string(indent int, char string) string {
+	i := strings.Repeat(char, indent)
+
+	var sb strings.Builder
+	sb.WriteString("Question {\n")
+
+	for _, qn := range q.qNames {
+		sb.WriteString(fmt.Sprintf("%sName: %s\n", i, string(qn.data)))
+	}
+
+	sb.WriteString(fmt.Sprintf("%sType: %s\n", i, q.qType.TypeText()))
+	sb.WriteString(fmt.Sprintf("%sClass: %s\n", i, q.qClass.ClassText()))
+	sb.WriteString(fmt.Sprintf("%s}", i))
+
+	return sb.String()
+}
+
 func (q question) toBytes() []byte {
 	var (
 		bytes []byte
 		be    = binary.BigEndian
 	)
 
-	for _, qn := range q.questionNames {
+	for _, qn := range q.qNames {
 		bytes = append(bytes, qn.toBytes()...)
 	}
 
 	bytes = append(bytes, 0)
 
 	typeAndClass := make([]byte, 4)
-	be.PutUint16(typeAndClass[0:2], uint16(q.questionType))
-	be.PutUint16(typeAndClass[2:4], uint16(q.questionClass))
+	be.PutUint16(typeAndClass[0:2], uint16(q.qType))
+	be.PutUint16(typeAndClass[2:4], uint16(q.qClass))
 	bytes = append(bytes, typeAndClass...)
 
 	return bytes

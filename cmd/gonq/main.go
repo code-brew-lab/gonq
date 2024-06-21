@@ -12,7 +12,7 @@ import (
 
 func main() {
 	req := dns.NewRequest()
-	req.AddQuestion("google.com", dns.A, dns.INET)
+	req.AddQuestion("google.com", dns.TypeA, dns.ClassINET)
 
 	reqBytes, err := req.ToBytes()
 	if err != nil {
@@ -22,7 +22,7 @@ func main() {
 	fmt.Println("Request in hex:", hex.EncodeToString(reqBytes))
 
 	// Send the DNS query
-	conn, err := net.Dial("udp", "1.1.1.1:53")
+	conn, err := net.Dial("udp", "8.8.8.8:53")
 	if err != nil {
 		log.Fatalln("Error dialing:", err)
 	}

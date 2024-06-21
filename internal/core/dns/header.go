@@ -30,14 +30,16 @@ func NewHeaderBuilder() *HeaderBuilder {
 	}
 }
 
-func parseHeader(header []byte) (*Header, error) {
-	if len(header) != 12 {
+func parseHeader(bytes []byte) (*Header, error) {
+	if len(bytes) != 12 {
 		return nil, errors.New("header should be 12 bytes")
 	}
+
+	header := new(Header)
 	be := binary.BigEndian
 
-	id := header[:2]
-	flags := header[2:4]
+	id := bytes[:2]
+	flags := bytes[2:4]
 
 	parsedID, err := ParseID(id)
 	if err != nil {
@@ -49,19 +51,14 @@ func parseHeader(header []byte) (*Header, error) {
 		return nil, err
 	}
 
-	qCount := be.Uint16(header[4:6])
-	aCount := be.Uint16(header[6:8])
-	nsCount := be.Uint16(header[8:10])
-	arCount := be.Uint16(header[10:12])
+	header.id = parsedID
+	header.flags = parsedFlags
+	header.questionCount = be.Uint16(bytes[4:6])
+	header.answerCount = be.Uint16(bytes[6:8])
+	header.nameServerCount = be.Uint16(bytes[8:10])
+	header.additionalRecordCount = be.Uint16(bytes[10:12])
 
-	return &Header{
-		id:                    parsedID,
-		flags:                 parsedFlags,
-		questionCount:         qCount,
-		answerCount:           aCount,
-		nameServerCount:       nsCount,
-		additionalRecordCount: arCount,
-	}, nil
+	return header, nil
 }
 
 func newHeader() *Header {
@@ -108,6 +105,30 @@ func (bh *HeaderBuilder) AddError(err error) {
 
 func (bh *HeaderBuilder) Build() *Header {
 	return bh.Header
+}
+
+func (h *Header) IsTruncated() bool {
+	return h.flags.isTruncated
+}
+
+func (h *Header) IsAuthoritative() bool {
+	return h.flags.isAuthoritative
+}
+
+func (h *Header) CanRecursive() bool {
+	return h.flags.canRecursive
+}
+
+func (h *Header) ResponseCode() ResponseCode {
+	return h.flags.responseCode
+}
+
+func (h *Header) QuestionCount() uint16 {
+	return h.questionCount
+}
+
+func (h *Header) AnswerCount() uint16 {
+	return h.answerCount
 }
 
 func (h *Header) addQuestion() {
