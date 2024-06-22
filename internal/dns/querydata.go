@@ -45,3 +45,7 @@ func (qn queryData) toBytes() []byte {
 
 	return bytes
 }
+
+func (qn queryData) string() string {
+	return string(qn.data)
+}

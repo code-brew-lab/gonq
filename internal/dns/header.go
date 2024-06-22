@@ -23,6 +23,8 @@ type (
 	}
 )
 
+const headerSize int = 12
+
 // NewHeaderBuilder creates a new HeaderBuilder instance with default values
 func NewHeaderBuilder() *HeaderBuilder {
 	return &HeaderBuilder{
@@ -31,7 +33,7 @@ func NewHeaderBuilder() *HeaderBuilder {
 }
 
 func parseHeader(bytes []byte) (*Header, error) {
-	if len(bytes) != 12 {
+	if len(bytes) < headerSize {
 		return nil, errors.New("header should be 12 bytes")
 	}
 

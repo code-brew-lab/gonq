@@ -74,14 +74,25 @@ func (q query) string(indent int, char string) string {
 	i := strings.Repeat(char, indent)
 
 	var sb strings.Builder
-	sb.WriteString("Question:\n")
-
-	for _, qn := range q.queryData {
-		sb.WriteString(fmt.Sprintf("%sName: %s\n", i, string(qn.data)))
-	}
-
+	sb.WriteString(fmt.Sprintf("%sQuestion:\n", i))
+	sb.WriteString(fmt.Sprintf("%sName: %s\n", i, q.domainToString()))
 	sb.WriteString(fmt.Sprintf("%sType: %s\n", i, q.recordType.TypeText()))
 	sb.WriteString(fmt.Sprintf("%sClass: %s\n", i, q.recordClass.ClassText()))
+
+	return sb.String()
+}
+
+func (q query) domainToString() string {
+	var sb strings.Builder
+
+	for i, qn := range q.queryData {
+		sb.WriteString(qn.string())
+		if i == len(q.queryData)-1 {
+			break
+		}
+
+		sb.WriteString(".")
+	}
 
 	return sb.String()
 }

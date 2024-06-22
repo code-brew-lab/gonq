@@ -24,6 +24,8 @@ type (
 	}
 )
 
+const flagsSize int = 2
+
 func NewFlagsBuilder() *FlagsBuilder {
 	return &FlagsBuilder{
 		Flags: newFlags(),
@@ -32,7 +34,7 @@ func NewFlagsBuilder() *FlagsBuilder {
 }
 
 func parseFlags(bytes []byte) (*Flags, error) {
-	if len(bytes) != 2 {
+	if len(bytes) < flagsSize {
 		return nil, errors.New("flags should be 2 bytes")
 	}
 

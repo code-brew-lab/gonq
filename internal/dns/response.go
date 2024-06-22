@@ -7,65 +7,44 @@ import (
 )
 
 type Response struct {
+	Raw     []byte
 	Header  *Header
 	queries []query
 	answers []answer
 }
 
 func ParseResponse(response []byte) (*Response, error) {
-	if len(response) < 12 {
-		return nil, errors.New("dns.ParseResponse: response too short to contain a valid header")
+	raw := copyBytes(response)
+
+	header, err := parseHeader(response)
+	if err != nil {
+		return nil, fmt.Errorf("dns.ParseResponse: %v", err)
+	}
+	if header.IsTruncated() {
+		return nil, errors.New("dns.ParseResponse: response is truncated")
+	}
+	if respCode := header.ResponseCode(); respCode != CodeNoError {
+		return nil, fmt.Errorf("dns.ParseResponse: request responded with status: %s", respCode.CodeText())
 	}
 
-	header, err := parseHeader(response[:12])
+	response = response[headerSize:]
+	qCount := header.QuestionCount()
+	queries, qBytes, err := parseQueries(response, int(qCount))
 	if err != nil {
 		return nil, fmt.Errorf("dns.ParseResponse: %v", err)
 	}
 
-	if header.IsTruncated() {
-		return nil, errors.New("dns.ParseResponse: response is truncated")
-	}
-
-	if header.ResponseCode() != CodeNoError {
-		return nil, fmt.Errorf("dns.ParseResponse: request responded with status: %s", header.ResponseCode().CodeText())
-	}
-
-	response = response[12:]
-	qCount := header.QuestionCount()
-	var questions []query
-
-	for i := 0; i < int(qCount); i++ {
-		q, bytesRead, err := parseQuery(response)
-		if err != nil {
-			return nil, fmt.Errorf("dns.ParseResponse: %v", err)
-		}
-
-		questions = append(questions, q)
-		if bytesRead > len(response) {
-			return nil, errors.New("dns.ParseResponse: byte slice length exceeded")
-		}
-		response = response[bytesRead:]
-	}
-
+	response = response[qBytes:]
 	aCount := header.AnswerCount()
-	var answers []answer
-
-	for i := 0; i < int(aCount); i++ {
-		a, bytesRead, err := parseAnswer(response)
-		if err != nil {
-			return nil, fmt.Errorf("dns.ParseResponse: %v", err)
-		}
-
-		answers = append(answers, a)
-		if bytesRead > len(response) {
-			return nil, errors.New("dns.ParseResponse: byte slice length exceeded")
-		}
-		response = response[bytesRead:]
+	answers, _, err := parseAnswers(response, int(aCount))
+	if err != nil {
+		return nil, fmt.Errorf("dns.ParseResponse: %v", err)
 	}
 
 	return &Response{
+		Raw:     raw,
 		Header:  header,
-		queries: questions,
+		queries: queries,
 		answers: answers,
 	}, nil
 }
@@ -99,4 +78,59 @@ func (r *Response) String() string {
 		sb.WriteString("\tAnswers: []\n")
 	}
 	return sb.String()
+}
+
+func parseQueries(bytes []byte, qCount int) ([]query, int, error) {
+	queries := make([]query, 0)
+	raw := copyBytes(bytes)
+	read := 0
+
+	for i := 0; i < int(qCount); i++ {
+		q, bytesRead, err := parseQuery(raw)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		queries = append(queries, q)
+		if bytesRead > len(bytes) {
+			return nil, 0, errors.New("byte slice length exceeded")
+		}
+
+		raw = raw[bytesRead:]
+		read += bytesRead
+	}
+
+	return queries, read, nil
+}
+
+func parseAnswers(bytes []byte, aCount int) ([]answer, int, error) {
+	answers := make([]answer, 0)
+	raw := copyBytes(bytes)
+	read := 0
+
+	for i := 0; i < int(aCount); i++ {
+		a, bytesRead, err := parseAnswer(raw)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		answers = append(answers, a)
+		if bytesRead > len(bytes) {
+			return nil, 0, errors.New("byte slice length exceeded")
+		}
+
+		raw = raw[bytesRead:]
+		read += bytesRead
+	}
+
+	return answers, read, nil
+}
+
+func copyBytes(bytes []byte) []byte {
+	copy := make([]byte, len(bytes))
+	for i := 0; i < len(bytes); i++ {
+		copy[i] = bytes[i]
+	}
+
+	return copy
 }
