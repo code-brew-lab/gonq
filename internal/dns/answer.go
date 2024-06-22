@@ -2,51 +2,40 @@ package dns
 
 import (
 	"encoding/binary"
-	"fmt"
-	"strings"
+	"errors"
 )
 
-type (
-	answer struct {
-		compressionType compressionType // 4 bit compression type
-		offset          uint16          // 12 bit offset value
-		ttl             uint32
-		readLength      uint16
-		data            []byte
-	}
+type answer struct {
+	compressionType uint16 // 4 bit compression type
+	offset          uint16 // 12 bit offset value
+	ttl             uint32
+	readLength      uint16
+	data            []byte
+}
 
-	compressionType uint8
-)
-
-const (
-	pointer compressionType = 0xc
-)
+const answerHeaderSize int = 12
 
 func parseAnswer(bytes []byte) (answer, int, error) {
 	var a answer
 	be := binary.BigEndian
 
+	if len(bytes) < answerHeaderSize {
+		return a, 0, errors.New("not enough bytes to parse the answer")
+	}
+
 	firstByte := bytes[0]
 	secondByte := bytes[1]
 
-	a.compressionType = compressionType(firstByte >> 4)
+	a.compressionType = uint16(firstByte >> 4)
 	a.offset = uint16(firstByte&0x0F)<<8 | uint16(secondByte)
 	a.ttl = be.Uint32((bytes[2:10]))
 	a.readLength = be.Uint16(bytes[10:12])
-	a.data = bytes[12 : 12+int(a.readLength)]
 
-	return a, 6 + int(a.readLength), nil
-}
+	if len(bytes[answerHeaderSize:]) < int(a.readLength) {
+		return a, 0, errors.New("not enough bytes to parse the answer")
+	}
 
-func (a answer) string(indent int, char string) string {
-	i := strings.Repeat(char, indent)
+	a.data = bytes[answerHeaderSize : answerHeaderSize+int(a.readLength)]
 
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%sAnswer:\n", i))
-	sb.WriteString(fmt.Sprintf("%sCompression: %v\n", i, a.compressionType))
-	sb.WriteString(fmt.Sprintf("%sOffset: %v\n", i, a.offset))
-	sb.WriteString(fmt.Sprintf("%sTTL: %d\n", i, a.ttl))
-	sb.WriteString(fmt.Sprintf("%sData Length: %d\n", i, a.readLength))
-	sb.WriteString(fmt.Sprintf("%sData: %d\n", i, a.data))
-	return sb.String()
+	return a, answerHeaderSize + int(a.readLength), nil
 }

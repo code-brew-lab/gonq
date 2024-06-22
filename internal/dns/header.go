@@ -3,41 +3,38 @@ package dns
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
-	"strings"
 )
 
 type (
-	Header struct { // 96 bits total
+	header struct { // 96 bits total
 		id                    ID     // [Req + Resp]  Unique request id. Same for the following response.
-		flags                 *Flags // [Req + Resp]  See flags.go
-		questionCount         uint16 // [Req]         Number of entries inside the question.
+		flags                 *flags // [Req + Resp]  See flags.go
+		queryCount            uint16 // [Req]         Number of entries inside the query.
 		answerCount           uint16 // [Resp]        Number of response entries from DNS server.
 		nameServerCount       uint16 // [Req]         Number of name server resource records in the authority records section.
 		additionalRecordCount uint16 // [Req]         Number of resource records in the additional records section.
 	}
 
-	HeaderBuilder struct {
-		*Header
+	headerBuilder struct {
+		*header
 		errors []error
 	}
 )
 
 const headerSize int = 12
 
-// NewHeaderBuilder creates a new HeaderBuilder instance with default values
-func NewHeaderBuilder() *HeaderBuilder {
-	return &HeaderBuilder{
-		Header: newHeader(),
+func newHeaderBuilder() *headerBuilder {
+	return &headerBuilder{
+		header: newHeader(),
 	}
 }
 
-func parseHeader(bytes []byte) (*Header, error) {
+func parseHeader(bytes []byte) (*header, error) {
 	if len(bytes) < headerSize {
 		return nil, errors.New("header should be 12 bytes")
 	}
 
-	header := new(Header)
+	header := new(header)
 	be := binary.BigEndian
 
 	id := bytes[:2]
@@ -55,7 +52,7 @@ func parseHeader(bytes []byte) (*Header, error) {
 
 	header.id = parsedID
 	header.flags = parsedFlags
-	header.questionCount = be.Uint16(bytes[4:6])
+	header.queryCount = be.Uint16(bytes[4:6])
 	header.answerCount = be.Uint16(bytes[6:8])
 	header.nameServerCount = be.Uint16(bytes[8:10])
 	header.additionalRecordCount = be.Uint16(bytes[10:12])
@@ -63,16 +60,16 @@ func parseHeader(bytes []byte) (*Header, error) {
 	return header, nil
 }
 
-func newHeader() *Header {
-	return &Header{}
+func newHeader() *header {
+	return &header{}
 }
 
-func (bh *HeaderBuilder) SetID(id ID) *HeaderBuilder {
+func (bh *headerBuilder) SetID(id ID) *headerBuilder {
 	bh.id = id
 	return bh
 }
 
-func (bh *HeaderBuilder) SetFlags(flags *Flags) *HeaderBuilder {
+func (bh *headerBuilder) SetFlags(flags *flags) *headerBuilder {
 	if flags == nil {
 		return bh
 	}
@@ -81,83 +78,73 @@ func (bh *HeaderBuilder) SetFlags(flags *Flags) *HeaderBuilder {
 	return bh
 }
 
-func (bh *HeaderBuilder) SetQuestionCount(count uint16) *HeaderBuilder {
-	bh.questionCount = count
+func (bh *headerBuilder) SetQuestionCount(count uint16) *headerBuilder {
+	bh.queryCount = count
 	return bh
 }
 
-func (bh *HeaderBuilder) SetAnswerCount(count uint16) *HeaderBuilder {
+func (bh *headerBuilder) SetAnswerCount(count uint16) *headerBuilder {
 	bh.answerCount = count
 	return bh
 }
 
-func (bh *HeaderBuilder) SetNameServerCount(count uint16) *HeaderBuilder {
+func (bh *headerBuilder) SetNameServerCount(count uint16) *headerBuilder {
 	bh.nameServerCount = count
 	return bh
 }
 
-func (bh *HeaderBuilder) SetAdditionalRecordCount(count uint16) *HeaderBuilder {
+func (bh *headerBuilder) SetAdditionalRecordCount(count uint16) *headerBuilder {
 	bh.additionalRecordCount = count
 	return bh
 }
 
-func (bh *HeaderBuilder) AddError(err error) {
+func (bh *headerBuilder) AddError(err error) {
 	bh.errors = append(bh.errors, err)
 }
 
-func (bh *HeaderBuilder) Build() *Header {
-	return bh.Header
+func (bh *headerBuilder) Build() *header {
+	return bh.header
 }
 
-func (h *Header) IsTruncated() bool {
+func (h *header) ID() ID {
+	return h.id
+}
+
+func (h *header) IsTruncated() bool {
 	return h.flags.isTruncated
 }
 
-func (h *Header) IsAuthoritative() bool {
+func (h *header) IsAuthoritative() bool {
 	return h.flags.isAuthoritative
 }
 
-func (h *Header) CanRecursive() bool {
+func (h *header) CanRecursive() bool {
 	return h.flags.canRecursive
 }
 
-func (h *Header) ResponseCode() ResponseCode {
+func (h *header) ResponseCode() ResponseCode {
 	return h.flags.responseCode
 }
 
-func (h *Header) QuestionCount() uint16 {
-	return h.questionCount
+func (h *header) QueryCount() uint16 {
+	return h.queryCount
 }
 
-func (h *Header) AnswerCount() uint16 {
+func (h *header) AnswerCount() uint16 {
 	return h.answerCount
 }
 
-func (h *Header) addQuestion() {
-	h.questionCount += 1
+func (h *header) addQuestion() {
+	h.queryCount += 1
 }
 
-func (h *Header) string(indent int, char string) string {
-	i := strings.Repeat(char, indent)
-
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%sHeader:\n", i))
-	sb.WriteString(fmt.Sprintf("%sID: %v\n", i, h.id))
-	sb.WriteString(fmt.Sprintf("%s%v\n", i, h.flags.string(indent+1, char)))
-	sb.WriteString(fmt.Sprintf("%sQuestion Count: %v\n", i, h.questionCount))
-	sb.WriteString(fmt.Sprintf("%sAnswer Count: %v\n", i, h.answerCount))
-	sb.WriteString(fmt.Sprintf("%sName Server Count: %v\n", i, h.nameServerCount))
-	sb.WriteString(fmt.Sprintf("%sAdditional Record Count: %v", i, h.additionalRecordCount))
-	return sb.String()
-}
-
-func (h *Header) toBytes() []byte {
+func (h *header) toBytes() []byte {
 	var bytes [12]byte
 	be := binary.BigEndian
 
 	be.PutUint16(bytes[0:2], h.id.toUint16())
 	be.PutUint16(bytes[2:4], h.flags.toUint16())
-	be.PutUint16(bytes[4:6], h.questionCount)
+	be.PutUint16(bytes[4:6], h.queryCount)
 	be.PutUint16(bytes[6:8], h.answerCount)
 	be.PutUint16(bytes[8:10], h.nameServerCount)
 	be.PutUint16(bytes[10:12], h.additionalRecordCount)

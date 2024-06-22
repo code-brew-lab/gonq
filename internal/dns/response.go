@@ -3,81 +3,55 @@ package dns
 import (
 	"errors"
 	"fmt"
-	"strings"
 )
 
-type Response struct {
-	Raw     []byte
-	Header  *Header
-	queries []query
-	answers []answer
-}
+type (
+	response struct {
+		raw     []byte
+		header  *header
+		queries []query
+		answers []answer
+	}
 
-func ParseResponse(response []byte) (*Response, error) {
-	raw := copyBytes(response)
+	Response interface {
+		ID() ID
+	}
+)
 
-	header, err := parseHeader(response)
+func parseResponse(bytes []byte) (*response, error) {
+	raw := copyBytes(bytes)
+
+	header, err := parseHeader(bytes)
 	if err != nil {
-		return nil, fmt.Errorf("dns.ParseResponse: %v", err)
+		return nil, err
 	}
 	if header.IsTruncated() {
-		return nil, errors.New("dns.ParseResponse: response is truncated")
+		return nil, errors.New("response is truncated")
 	}
 	if respCode := header.ResponseCode(); respCode != CodeNoError {
-		return nil, fmt.Errorf("dns.ParseResponse: request responded with status: %s", respCode.CodeText())
+		return nil, fmt.Errorf("request responded with status: %s", respCode.CodeText())
 	}
 
-	response = response[headerSize:]
-	qCount := header.QuestionCount()
-	queries, qBytes, err := parseQueries(response, int(qCount))
+	bytes = bytes[headerSize:]
+	qCount := header.QueryCount()
+	queries, qBytes, err := parseQueries(bytes, int(qCount))
 	if err != nil {
-		return nil, fmt.Errorf("dns.ParseResponse: %v", err)
+		return nil, err
 	}
 
-	response = response[qBytes:]
+	bytes = bytes[qBytes:]
 	aCount := header.AnswerCount()
-	answers, _, err := parseAnswers(response, int(aCount))
+	answers, _, err := parseAnswers(bytes, int(aCount))
 	if err != nil {
-		return nil, fmt.Errorf("dns.ParseResponse: %v", err)
+		return nil, err
 	}
 
-	return &Response{
-		Raw:     raw,
-		Header:  header,
+	return &response{
+		raw:     raw,
+		header:  header,
 		queries: queries,
 		answers: answers,
 	}, nil
-}
-
-func (r *Response) String() string {
-	var sb strings.Builder
-	sb.WriteString("Response:\n")
-	if r.Header != nil {
-		sb.WriteString(fmt.Sprintf("%s\n", r.Header.string(1, "\t")))
-	} else {
-		sb.WriteString("\tHeader: nil\n")
-	}
-
-	if len(r.queries) > 0 {
-		sb.WriteString("\tQueries: [\n")
-		for _, q := range r.queries {
-			sb.WriteString(fmt.Sprintf("%s\n", q.string(2, "\t")))
-		}
-		sb.WriteString("\t]\n")
-	} else {
-		sb.WriteString("\tQueries: []\n")
-	}
-
-	if len(r.answers) > 0 {
-		sb.WriteString("\tAnswers: [\n")
-		for _, a := range r.answers {
-			sb.WriteString(fmt.Sprintf("%s\n", a.string(2, "\t")))
-		}
-		sb.WriteString("\t]\n")
-	} else {
-		sb.WriteString("\tAnswers: []\n")
-	}
-	return sb.String()
 }
 
 func parseQueries(bytes []byte, qCount int) ([]query, int, error) {
@@ -124,6 +98,18 @@ func parseAnswers(bytes []byte, aCount int) ([]answer, int, error) {
 	}
 
 	return answers, read, nil
+}
+
+func (r *response) ID() ID {
+	return r.header.ID()
+}
+
+func (r *response) QueryCount() uint16 {
+	return r.header.QueryCount()
+}
+
+func (r *response) AnswerCount() uint16 {
+	return r.header.AnswerCount()
 }
 
 func copyBytes(bytes []byte) []byte {

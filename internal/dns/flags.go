@@ -2,12 +2,10 @@ package dns
 
 import (
 	"errors"
-	"fmt"
-	"strings"
 )
 
 type (
-	Flags struct { // 16 bits total.
+	flags struct { // 16 bits total.
 		isQuery         bool         // [Req + Resp]  Is the message query or response.
 		queryKind       QueryKind    // [Req]         A four-bit field that specifies the kind of query. See querykind.go.
 		isAuthoritative bool         // [Resp]        Is the response from authoritative DNS server.
@@ -18,29 +16,29 @@ type (
 		responseCode    ResponseCode // [Resp]        A four-bit response code. See responsecode.go.
 	}
 
-	FlagsBuilder struct {
-		*Flags
+	flagsBuilder struct {
+		*flags
 		errors []error
 	}
 )
 
 const flagsSize int = 2
 
-func NewFlagsBuilder() *FlagsBuilder {
-	return &FlagsBuilder{
-		Flags: newFlags(),
+func newFlagsBuilder() *flagsBuilder {
+	return &flagsBuilder{
+		flags: newFlags(),
 	}
 
 }
 
-func parseFlags(bytes []byte) (*Flags, error) {
+func parseFlags(bytes []byte) (*flags, error) {
 	if len(bytes) < flagsSize {
 		return nil, errors.New("flags should be 2 bytes")
 	}
 
 	byte1 := bytes[0]
 	byte2 := bytes[1]
-	flags := new(Flags)
+	flags := new(flags)
 
 	isQuery := (byte1 & 0x80) >> 7
 	operationCode := (byte1 & 0x78) >> 3
@@ -64,8 +62,8 @@ func parseFlags(bytes []byte) (*Flags, error) {
 	return flags, nil
 }
 
-func newFlags() *Flags {
-	return &Flags{
+func newFlags() *flags {
+	return &flags{
 		isQuery:      true,
 		isRecursive:  true,
 		queryKind:    KindStandard,
@@ -73,71 +71,55 @@ func newFlags() *Flags {
 	}
 }
 
-func (fb *FlagsBuilder) SetIsQuery(isQuery bool) *FlagsBuilder {
+func (fb *flagsBuilder) SetIsQuery(isQuery bool) *flagsBuilder {
 	fb.isQuery = isQuery
 	return fb
 }
 
-func (fb *FlagsBuilder) SetOperationCode(operationCode QueryKind) *FlagsBuilder {
+func (fb *flagsBuilder) SetOperationCode(operationCode QueryKind) *flagsBuilder {
 	fb.queryKind = operationCode
 	return fb
 }
 
-func (fb *FlagsBuilder) SetIsAuthoritative(isAuthoritative bool) *FlagsBuilder {
+func (fb *flagsBuilder) SetIsAuthoritative(isAuthoritative bool) *flagsBuilder {
 	fb.isAuthoritative = isAuthoritative
 	return fb
 }
 
-func (fb *FlagsBuilder) SetIsTruncated(isTruncated bool) *FlagsBuilder {
+func (fb *flagsBuilder) SetIsTruncated(isTruncated bool) *flagsBuilder {
 	fb.isTruncated = isTruncated
 	return fb
 }
 
-func (fb *FlagsBuilder) SetIsRecursive(isRecursive bool) *FlagsBuilder {
+func (fb *flagsBuilder) SetIsRecursive(isRecursive bool) *flagsBuilder {
 	fb.isRecursive = isRecursive
 	return fb
 }
 
-func (fb *FlagsBuilder) SetCanRecursive(canRecursive bool) *FlagsBuilder {
+func (fb *flagsBuilder) SetCanRecursive(canRecursive bool) *flagsBuilder {
 	fb.canRecursive = canRecursive
 	return fb
 }
 
-func (fb *FlagsBuilder) SetFutureUse(futureUse uint8) *FlagsBuilder {
+func (fb *flagsBuilder) SetFutureUse(futureUse uint8) *flagsBuilder {
 	fb.futureUse = futureUse
 	return fb
 }
 
-func (fb *FlagsBuilder) SetResponseCode(responseCode ResponseCode) *FlagsBuilder {
+func (fb *flagsBuilder) SetResponseCode(responseCode ResponseCode) *flagsBuilder {
 	fb.responseCode = responseCode
 	return fb
 }
 
-func (fb *FlagsBuilder) AddError(err error) {
+func (fb *flagsBuilder) AddError(err error) {
 	fb.errors = append(fb.errors, err)
 }
 
-func (fb *FlagsBuilder) Build() *Flags {
-	return fb.Flags
+func (fb *flagsBuilder) Build() *flags {
+	return fb.flags
 }
 
-func (f *Flags) string(indent int, char string) string {
-	i := strings.Repeat(char, indent)
-
-	var sb strings.Builder
-	sb.WriteString("Flags:\n")
-	sb.WriteString(fmt.Sprintf("%sIs Query: %v\n", i, f.isQuery))
-	sb.WriteString(fmt.Sprintf("%sOperation Code: %s\n", i, f.queryKind.KindText()))
-	sb.WriteString(fmt.Sprintf("%sIs Authoritative: %v\n", i, f.isAuthoritative))
-	sb.WriteString(fmt.Sprintf("%sIs Truncated: %v\n", i, f.isTruncated))
-	sb.WriteString(fmt.Sprintf("%sIs Recursive: %v\n", i, f.isRecursive))
-	sb.WriteString(fmt.Sprintf("%sCan Recursive: %v\n", i, f.canRecursive))
-	sb.WriteString(fmt.Sprintf("%sFuture Use: %v\n", i, f.futureUse))
-	sb.WriteString(fmt.Sprintf("%sResponse Code: %s\n", i, f.responseCode.CodeText()))
-	return sb.String()
-}
-
-func (f *Flags) toUint16() uint16 {
+func (f *flags) toUint16() uint16 {
 	var result uint16
 
 	if !f.isQuery {
