@@ -2,7 +2,6 @@ package dns
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"strings"
 )
@@ -24,7 +23,6 @@ const (
 )
 
 func parseAnswer(bytes []byte) (answer, int, error) {
-	fmt.Println(hex.EncodeToString(bytes))
 	var a answer
 	be := binary.BigEndian
 
@@ -44,7 +42,7 @@ func (a answer) string(indent int, char string) string {
 	i := strings.Repeat(char, indent)
 
 	var sb strings.Builder
-	sb.WriteString(i + "Answer:\n")
+	sb.WriteString(fmt.Sprintf("%sAnswer:\n", i))
 	sb.WriteString(fmt.Sprintf("%sCompression: %v\n", i, a.compressionType))
 	sb.WriteString(fmt.Sprintf("%sOffset: %v\n", i, a.offset))
 	sb.WriteString(fmt.Sprintf("%sTTL: %d\n", i, a.ttl))

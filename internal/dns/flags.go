@@ -126,14 +126,14 @@ func (f *Flags) string(indent int, char string) string {
 
 	var sb strings.Builder
 	sb.WriteString("Flags:\n")
-	sb.WriteString(fmt.Sprintf("%sisQuery: %v\n", i, f.isQuery))
-	sb.WriteString(fmt.Sprintf("%soperationCode: %s\n", i, f.queryKind.KindText()))
-	sb.WriteString(fmt.Sprintf("%sisAuthoritative: %v\n", i, f.isAuthoritative))
-	sb.WriteString(fmt.Sprintf("%sisTruncated: %v\n", i, f.isTruncated))
-	sb.WriteString(fmt.Sprintf("%sisRecursive: %v\n", i, f.isRecursive))
-	sb.WriteString(fmt.Sprintf("%scanRecursive: %v\n", i, f.canRecursive))
-	sb.WriteString(fmt.Sprintf("%sfutureUse: %v\n", i, f.futureUse))
-	sb.WriteString(fmt.Sprintf("%sresponseCode: %s\n", i, f.responseCode.CodeText()))
+	sb.WriteString(fmt.Sprintf("%sIs Query: %v\n", i, f.isQuery))
+	sb.WriteString(fmt.Sprintf("%sOperation Code: %s\n", i, f.queryKind.KindText()))
+	sb.WriteString(fmt.Sprintf("%sIs Authoritative: %v\n", i, f.isAuthoritative))
+	sb.WriteString(fmt.Sprintf("%sIs Truncated: %v\n", i, f.isTruncated))
+	sb.WriteString(fmt.Sprintf("%sIs Recursive: %v\n", i, f.isRecursive))
+	sb.WriteString(fmt.Sprintf("%sCan Recursive: %v\n", i, f.canRecursive))
+	sb.WriteString(fmt.Sprintf("%sFuture Use: %v\n", i, f.futureUse))
+	sb.WriteString(fmt.Sprintf("%sResponse Code: %s\n", i, f.responseCode.CodeText()))
 	return sb.String()
 }
 

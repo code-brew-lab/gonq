@@ -74,7 +74,7 @@ func (q query) string(indent int, char string) string {
 	i := strings.Repeat(char, indent)
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%sQuestion:\n", i))
+	sb.WriteString(fmt.Sprintf("%sQuery:\n", i))
 	sb.WriteString(fmt.Sprintf("%sName: %s\n", i, q.domainToString()))
 	sb.WriteString(fmt.Sprintf("%sType: %s\n", i, q.recordType.TypeText()))
 	sb.WriteString(fmt.Sprintf("%sClass: %s\n", i, q.recordClass.ClassText()))

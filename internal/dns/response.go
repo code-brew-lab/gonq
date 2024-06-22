@@ -59,13 +59,13 @@ func (r *Response) String() string {
 	}
 
 	if len(r.queries) > 0 {
-		sb.WriteString("\tQuestions: [\n")
+		sb.WriteString("\tQueries: [\n")
 		for _, q := range r.queries {
 			sb.WriteString(fmt.Sprintf("%s\n", q.string(2, "\t")))
 		}
 		sb.WriteString("\t]\n")
 	} else {
-		sb.WriteString("\tQuestions: []\n")
+		sb.WriteString("\tQueries: []\n")
 	}
 
 	if len(r.answers) > 0 {
