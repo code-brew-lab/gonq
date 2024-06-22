@@ -39,11 +39,10 @@ func (a answer) string(indent int, char string) string {
 	i := strings.Repeat(char, indent)
 
 	var sb strings.Builder
-	sb.WriteString(i + "Answer {\n")
+	sb.WriteString(i + "Answer:\n")
 	// sb.WriteString(fmt.Sprintf("%s\tQuestion: %v\n", i, a.question))
 	sb.WriteString(fmt.Sprintf("%s\tTTL: %d\n", i, a.ttl))
 	sb.WriteString(fmt.Sprintf("%s\tData Length: %d\n", i, a.readLength))
 	sb.WriteString(fmt.Sprintf("%s\tData: %s\n", i, string(a.data)))
-	sb.WriteString(i + "}")
 	return sb.String()
 }

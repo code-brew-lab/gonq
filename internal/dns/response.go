@@ -6,13 +6,11 @@ import (
 	"strings"
 )
 
-type (
-	Response struct {
-		Header    *Header
-		questions []question
-		answers   []answer
-	}
-)
+type Response struct {
+	Header  *Header
+	queries []query
+	answers []answer
+}
 
 func ParseResponse(response []byte) (*Response, error) {
 	if len(response) < 12 {
@@ -34,10 +32,10 @@ func ParseResponse(response []byte) (*Response, error) {
 
 	response = response[12:]
 	qCount := header.QuestionCount()
-	var questions []question
+	var questions []query
 
 	for i := 0; i < int(qCount); i++ {
-		q, bytesRead, err := parseQuestion(response)
+		q, bytesRead, err := parseQuery(response)
 		if err != nil {
 			return nil, fmt.Errorf("dns.ParseResponse: %v", err)
 		}
@@ -66,24 +64,24 @@ func ParseResponse(response []byte) (*Response, error) {
 	}
 
 	return &Response{
-		Header:    header,
-		questions: questions,
-		answers:   answers,
+		Header:  header,
+		queries: questions,
+		answers: answers,
 	}, nil
 }
 
 func (r *Response) String() string {
 	var sb strings.Builder
-	sb.WriteString("Response {\n")
+	sb.WriteString("Response:\n")
 	if r.Header != nil {
 		sb.WriteString(fmt.Sprintf("%s\n", r.Header.string(1, "\t")))
 	} else {
 		sb.WriteString("\tHeader: nil\n")
 	}
 
-	if len(r.questions) > 0 {
+	if len(r.queries) > 0 {
 		sb.WriteString("\tQuestions: [\n")
-		for _, q := range r.questions {
+		for _, q := range r.queries {
 			sb.WriteString(fmt.Sprintf("%s\n", q.string(2, "\t")))
 		}
 		sb.WriteString("\t]\n")
@@ -100,7 +98,5 @@ func (r *Response) String() string {
 	} else {
 		sb.WriteString("\tAnswers: []\n")
 	}
-
-	sb.WriteString("}")
 	return sb.String()
 }

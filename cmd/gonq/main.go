@@ -7,12 +7,12 @@ import (
 	"net"
 	"time"
 
-	"github.com/code-brew-lab/gonq.git/internal/core/dns"
+	"github.com/code-brew-lab/gonq.git/internal/dns"
 )
 
 func main() {
 	req := dns.NewRequest()
-	req.AddQuestion("google.com", dns.TypeA, dns.ClassINET)
+	req.AddQuery("google.com", dns.TypeA, dns.ClassINET)
 
 	reqBytes, err := req.ToBytes()
 	if err != nil {

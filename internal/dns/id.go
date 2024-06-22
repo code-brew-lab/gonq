@@ -7,9 +7,7 @@ import (
 	"math/big"
 )
 
-type (
-	ID uint16
-)
+type ID uint16
 
 func NewID() ID {
 	id, err := rand.Int(rand.Reader, big.NewInt(65535))

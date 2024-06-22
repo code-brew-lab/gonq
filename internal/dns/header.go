@@ -139,14 +139,13 @@ func (h *Header) string(indent int, char string) string {
 	i := strings.Repeat(char, indent)
 
 	var sb strings.Builder
-	sb.WriteString("Header {\n")
+	sb.WriteString("Header:\n")
 	sb.WriteString(fmt.Sprintf("%sid: %v\n", i, h.id))
-	sb.WriteString(fmt.Sprintf("%sflags: %v\n", i, h.flags.string(indent+1, char)))
+	sb.WriteString(fmt.Sprintf("%s%v\n", i, h.flags.string(indent+1, char)))
 	sb.WriteString(fmt.Sprintf("%squestionCount: %v\n", i, h.questionCount))
 	sb.WriteString(fmt.Sprintf("%sanswerCount: %v\n", i, h.answerCount))
 	sb.WriteString(fmt.Sprintf("%snameServerCount: %v\n", i, h.nameServerCount))
 	sb.WriteString(fmt.Sprintf("%sadditionalRecordCount: %v\n", i, h.additionalRecordCount))
-	sb.WriteString(fmt.Sprintf("%s}", i))
 	return sb.String()
 }
 

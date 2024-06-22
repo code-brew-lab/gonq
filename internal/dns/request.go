@@ -4,12 +4,10 @@ import (
 	"errors"
 )
 
-type (
-	Request struct {
-		header    *Header
-		questions []question
-	}
-)
+type Request struct {
+	header    *Header
+	questions []query
+}
 
 func NewRequest() *Request {
 	flags := NewFlagsBuilder().SetIsQuery(true).SetIsRecursive(true).Build()
@@ -27,12 +25,12 @@ func NewRequestWithHeader(header *Header) (*Request, error) {
 
 	return &Request{
 		header:    header,
-		questions: make([]question, 1),
+		questions: make([]query, 1),
 	}, nil
 }
 
-func (r *Request) AddQuestion(domain string, rType RecordType, rClass RecordClass) {
-	r.questions = append(r.questions, newQuestion(domain, rType, rClass))
+func (r *Request) AddQuery(domain string, rType RecordType, rClass RecordClass) {
+	r.questions = append(r.questions, newQuery(domain, rType, rClass))
 	r.header.addQuestion()
 }
 
