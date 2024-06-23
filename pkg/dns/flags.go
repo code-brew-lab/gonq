@@ -2,12 +2,13 @@ package dns
 
 import (
 	"errors"
+	"fmt"
 )
 
 type (
-	flags struct { // 16 bits total.
+	Flags struct { // 16 bits total.
 		isQuery         bool         // [Req + Resp]  Is the message query or response.
-		queryKind       QueryKind    // [Req]         A four-bit field that specifies the kind of query. See querykind.go.
+		queryKind       queryKind    // [Req]         A four-bit field that specifies the kind of query. See querykind.go.
 		isAuthoritative bool         // [Resp]        Is the response from authoritative DNS server.
 		isTruncated     bool         // [Resp]        Is the response truncated or not.
 		isRecursive     bool         // [Req]         Ask DNS server to recursively ask for the domain.
@@ -16,28 +17,27 @@ type (
 		responseCode    ResponseCode // [Resp]        A four-bit response code. See responsecode.go.
 	}
 
-	flagsBuilder struct {
-		*flags
-		errors []error
+	FlagsBuilder struct {
+		*Flags
 	}
 )
 
 const FlagsSize int = 2
 
-func newFlagsBuilder() *flagsBuilder {
-	return &flagsBuilder{
-		flags: newFlags(),
+func NewFlagsBuilder() *FlagsBuilder {
+	return &FlagsBuilder{
+		Flags: newFlags(),
 	}
 }
 
-func parseFlags(bytes []byte) (*flags, error) {
+func parseFlags(bytes []byte) (*Flags, error) {
 	if len(bytes) < FlagsSize {
 		return nil, errors.New("flags should be 2 bytes")
 	}
 
 	byte1 := bytes[0]
 	byte2 := bytes[1]
-	flags := new(flags)
+	flags := new(Flags)
 
 	isQuery := (byte1 & 0x80) >> 7
 	operationCode := (byte1 & 0x78) >> 3
@@ -50,7 +50,7 @@ func parseFlags(bytes []byte) (*flags, error) {
 	responseCode := byte2 & 0x0F
 
 	flags.isQuery = isQuery == 0
-	flags.queryKind = QueryKind(operationCode)
+	flags.queryKind = queryKind(operationCode)
 	flags.isAuthoritative = isAuthoritative == 1
 	flags.isTruncated = isTruncated == 1
 	flags.isRecursive = isRecursive == 1
@@ -61,44 +61,77 @@ func parseFlags(bytes []byte) (*flags, error) {
 	return flags, nil
 }
 
-func newFlags() *flags {
-	return &flags{
+func newFlags() *Flags {
+	return &Flags{
 		isQuery:      true,
 		isRecursive:  true,
-		queryKind:    KindStandard,
+		queryKind:    kindStandard,
 		responseCode: CodeNoError,
 	}
 }
 
-func (fb *flagsBuilder) SetIsQuery(isQuery bool) *flagsBuilder {
+func (fb *FlagsBuilder) SetIsQuery(isQuery bool) *FlagsBuilder {
 	fb.isQuery = isQuery
 	return fb
 }
 
-func (fb *flagsBuilder) SetQueryKind(queryKind QueryKind) *flagsBuilder {
+func (fb *FlagsBuilder) SetQueryKind(queryKind queryKind) *FlagsBuilder {
 	fb.queryKind = queryKind
 	return fb
 }
 
-func (fb *flagsBuilder) SetIsRecursive(isRecursive bool) *flagsBuilder {
+func (fb *FlagsBuilder) SetIsRecursive(isRecursive bool) *FlagsBuilder {
 	fb.isRecursive = isRecursive
 	return fb
 }
 
-func (fb *flagsBuilder) SetFutureUse(futureUse uint8) *flagsBuilder {
+func (fb *FlagsBuilder) SetFutureUse(futureUse uint8) *FlagsBuilder {
 	fb.futureUse = futureUse
 	return fb
 }
 
-func (fb *flagsBuilder) AddError(err error) {
-	fb.errors = append(fb.errors, err)
+func (fb *FlagsBuilder) Build() *Flags {
+	return fb.Flags
 }
 
-func (fb *flagsBuilder) Build() *flags {
-	return fb.flags
+func (f *Flags) IsQuery() bool {
+	return f.isQuery
 }
 
-func (f *flags) toUint16() uint16 {
+func (f *Flags) QueryKind() queryKind {
+	return f.queryKind
+}
+
+func (f *Flags) IsAuthoritative() bool {
+	return f.isAuthoritative
+}
+
+func (f *Flags) IsTruncated() bool {
+	return f.isTruncated
+}
+
+func (f *Flags) IsRecursive() bool {
+	return f.isRecursive
+}
+
+func (f *Flags) CanRecursive() bool {
+	return f.canRecursive
+}
+
+func (f *Flags) FutureUse() uint8 {
+	return f.futureUse
+}
+
+func (f *Flags) ResponseCode() ResponseCode {
+	return f.responseCode
+}
+
+func (f *Flags) String() string {
+	return fmt.Sprintf("IsQuery: %v, QueryKind: %v, IsAuthoritative: %v, IsTruncated: %v, IsRecursive: %v, CanRecursive: %v, ResponseCode: %v",
+		f.isQuery, f.queryKind.kindText(), f.isAuthoritative, f.isTruncated, f.isRecursive, f.canRecursive, f.responseCode.CodeText())
+}
+
+func (f *Flags) toUint16() uint16 {
 	var result uint16
 
 	if !f.isQuery {

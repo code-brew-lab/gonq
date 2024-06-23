@@ -3,43 +3,44 @@ package dns
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 )
 
 type (
-	header struct { // 96 bits total
+	Header struct { // 96 bits total
 		id                    ID     // [Req + Resp]  Unique request id. Same for the following response.
-		flags                 *flags // [Req + Resp]  See flags.go
+		flags                 *Flags // [Req + Resp]  See flags.go
 		queryCount            uint16 // [Req]         Number of entries inside the query.
 		answerCount           uint16 // [Resp]        Number of response entries from DNS server.
 		nameServerCount       uint16 // [Req]         Number of name server resource records in the authority records section.
 		additionalRecordCount uint16 // [Req]         Number of resource records in the additional records section.
 	}
 
-	headerBuilder struct {
-		*header
+	HeaderBuilder struct {
+		*Header
 	}
 )
 
-const headerSize int = 12
+const HeaderSize int = 12
 
-func newHeaderBuilder() *headerBuilder {
-	return &headerBuilder{
-		header: newHeader(),
+func NewHeaderBuilder() *HeaderBuilder {
+	return &HeaderBuilder{
+		Header: newHeader(),
 	}
 }
 
-func parseHeader(bytes []byte) (*header, error) {
-	if len(bytes) < headerSize {
+func ParseHeader(bytes []byte) (*Header, error) {
+	if len(bytes) < HeaderSize {
 		return nil, errors.New("header should be 12 bytes")
 	}
 
-	header := new(header)
+	header := new(Header)
 	be := binary.BigEndian
 
 	id := bytes[:2]
 	flags := bytes[2:4]
 
-	parsedID, err := parseID(id)
+	parsedID, err := ParseID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -59,16 +60,16 @@ func parseHeader(bytes []byte) (*header, error) {
 	return header, nil
 }
 
-func newHeader() *header {
-	return &header{}
+func newHeader() *Header {
+	return &Header{}
 }
 
-func (bh *headerBuilder) setID(id ID) *headerBuilder {
+func (bh *HeaderBuilder) SetID(id ID) *HeaderBuilder {
 	bh.id = id
 	return bh
 }
 
-func (bh *headerBuilder) setFlags(flags *flags) *headerBuilder {
+func (bh *HeaderBuilder) SetFlags(flags *Flags) *HeaderBuilder {
 	if flags == nil {
 		return bh
 	}
@@ -77,19 +78,43 @@ func (bh *headerBuilder) setFlags(flags *flags) *headerBuilder {
 	return bh
 }
 
-func (bh *headerBuilder) build() *header {
-	return bh.header
+func (bh *HeaderBuilder) Build() *Header {
+	return bh.Header
 }
 
-func (h *header) addQuestion() {
+func (h *Header) ID() ID {
+	return h.id
+}
+
+func (h *Header) Flags() *Flags {
+	return h.flags
+}
+
+func (h *Header) QueryCount() uint16 {
+	return h.queryCount
+}
+
+func (h *Header) AnswerCount() uint16 {
+	return h.answerCount
+}
+
+func (h *Header) NameServerCount() uint16 {
+	return h.nameServerCount
+}
+
+func (h *Header) AdditionalRecordCount() uint16 {
+	return h.additionalRecordCount
+}
+
+func (h *Header) AddQuestion() {
 	h.queryCount += 1
 }
 
-func (h *header) toBytes() []byte {
+func (h *Header) ToBytes() []byte {
 	var bytes [12]byte
 	be := binary.BigEndian
 
-	be.PutUint16(bytes[0:2], h.id.toUint16())
+	be.PutUint16(bytes[0:2], h.id.ToUint16())
 	be.PutUint16(bytes[2:4], h.flags.toUint16())
 	be.PutUint16(bytes[4:6], h.queryCount)
 	be.PutUint16(bytes[6:8], h.answerCount)
@@ -97,4 +122,9 @@ func (h *header) toBytes() []byte {
 	be.PutUint16(bytes[10:12], h.additionalRecordCount)
 
 	return bytes[:]
+}
+
+func (h *Header) String() string {
+	return fmt.Sprintf("ID: %v\n\tFlags: %v\n\tQDCount: %d\n\tANCount: %d\n\tNSCount: %d\n\tARCount: %d",
+		h.id, h.flags, h.queryCount, h.answerCount, h.nameServerCount, h.additionalRecordCount)
 }

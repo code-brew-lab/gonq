@@ -9,7 +9,7 @@ import (
 
 type ID uint16
 
-func newID() ID {
+func NewID() ID {
 	id, err := rand.Int(rand.Reader, big.NewInt(65535))
 	if err != nil {
 		return ID(0)
@@ -17,7 +17,7 @@ func newID() ID {
 	return ID(id.Uint64())
 }
 
-func parseID(bytes []byte) (ID, error) {
+func ParseID(bytes []byte) (ID, error) {
 	if len(bytes) != 2 {
 		return ID(0), errors.New("id should be 2 bytes")
 	}
@@ -28,6 +28,6 @@ func parseID(bytes []byte) (ID, error) {
 	return ID(id), nil
 }
 
-func (i ID) toUint16() uint16 {
+func (i ID) ToUint16() uint16 {
 	return uint16(i)
 }

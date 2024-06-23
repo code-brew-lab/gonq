@@ -3,8 +3,8 @@ package dns
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"net"
-	"time"
 )
 
 type answer struct {
@@ -12,7 +12,7 @@ type answer struct {
 	offset          uint16 // 12 bit offset value
 	ttl             uint32
 	readLength      uint16
-	data            []byte
+	ip              net.IP
 }
 
 const answerHeaderSize int = 12
@@ -37,16 +37,12 @@ func parseAnswer(bytes []byte) (answer, int, error) {
 		return a, 0, errors.New("not enough bytes to parse the answer")
 	}
 
-	a.data = bytes[answerHeaderSize : answerHeaderSize+int(a.readLength)]
+	a.ip = bytes[answerHeaderSize : answerHeaderSize+int(a.readLength)]
 
 	return a, answerHeaderSize + int(a.readLength), nil
 }
 
-func (a *answer) IP() net.IP {
-	d := a.data
-	return net.IPv4(d[0], d[1], d[2], d[3])
-}
-
-func (a *answer) TTL() time.Duration {
-	return time.Duration(a.ttl*10 ^ 9)
+func (a answer) string() string {
+	return fmt.Sprintf("CompressionType: %d, Offset: %d, TTL: %d, ReadLength: %d, IP: %v",
+		a.compressionType, a.offset, a.ttl, a.readLength, a.ip)
 }

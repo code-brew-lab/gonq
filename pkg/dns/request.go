@@ -4,35 +4,30 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strings"
 	"time"
 )
 
 type (
-	request struct {
+	Request struct {
 		addr    *net.UDPAddr
-		header  *header
+		header  *Header
 		queries []query
-	}
-
-	Request interface {
-		Domains() []string
-		AddQuery(domain string, rType RecordType, rClass RecordClass)
-		Make() (Response, error)
-		ToBytes() []byte
 	}
 )
 
-func NewRequest(distIP string, port int) (Request, error) {
-	flags := newFlagsBuilder().SetIsQuery(true).SetIsRecursive(true).Build()
-	header := newHeaderBuilder().setID(newID()).setFlags(flags).build()
+func NewRequestWithHeader(header *Header, distIP string, port int) (*Request, error) {
+	if header == nil {
+		return nil, errors.New("dns.NewRequestWithHeader: header is nil")
+	}
 
 	ip := net.ParseIP(distIP)
 	if ip == nil {
-		return nil, errors.New("dns.NewRequest: invalid destination ip")
+		return nil, errors.New("dns.NewRequestWithHeader: invalid destination ip")
 	}
 
 	if port < 0 {
-		return nil, errors.New("dns.NewRequest: invalid destination port")
+		return nil, errors.New("dns.NewRequestWithHeader: invalid destination port")
 	}
 
 	addr := &net.UDPAddr{
@@ -40,27 +35,25 @@ func NewRequest(distIP string, port int) (Request, error) {
 		Port: port,
 	}
 
-	return &request{
+	return &Request{
 		addr:   addr,
 		header: header,
 	}, nil
 }
 
-func (r *request) Domains() []string {
-	var domains []string
-	for _, q := range r.queries {
-		domains = append(domains, q.Domain())
-	}
+func NewRequest(distIP string, port int) (*Request, error) {
+	flags := NewFlagsBuilder().SetIsQuery(true).SetIsRecursive(true).Build()
+	header := NewHeaderBuilder().SetID(NewID()).SetFlags(flags).Build()
 
-	return domains
+	return NewRequestWithHeader(header, distIP, port)
 }
 
-func (r *request) AddQuery(domain string, rType RecordType, rClass RecordClass) {
+func (r *Request) AddQuery(domain string, rType RecordType, rClass RecordClass) {
 	r.queries = append(r.queries, newQuery(domain, rType, rClass))
-	r.header.addQuestion()
+	r.header.AddQuestion()
 }
 
-func (r *request) Make() (Response, error) {
+func (r *Request) Make() (*Response, error) {
 	if r == nil {
 		return nil, errors.New("dns.Make: request is nil")
 	}
@@ -94,16 +87,33 @@ func (r *request) Make() (Response, error) {
 	return resp, nil
 }
 
-func (r *request) ToBytes() []byte {
+func (r *Request) Domains() []string {
+	var domains []string
+	for _, d := range r.queries {
+		domains = append(domains, d.domain())
+	}
+
+	return domains
+}
+
+func (r *Request) ToBytes() []byte {
 	var bytes []byte
 
 	header := r.header
 	questions := r.queries
 
-	bytes = append(bytes, header.toBytes()...)
+	bytes = append(bytes, header.ToBytes()...)
 	for _, q := range questions {
 		bytes = append(bytes, q.toBytes()...)
 	}
 
 	return bytes
+}
+
+func (r *Request) String() string {
+	var queries []string
+	for _, q := range r.queries {
+		queries = append(queries, q.string())
+	}
+	return fmt.Sprintf("Address: %v\nHeader: %v\n Queries: [%v]\n", r.addr, r.header, strings.Join(queries, ", "))
 }

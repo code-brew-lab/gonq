@@ -3,6 +3,7 @@ package dns
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -51,22 +52,18 @@ func parseQuery(bytes []byte) (query, int, error) {
 	return q, bytesRead + queryHeaderSize, nil
 }
 
-func (q query) Domain() string {
-	var sb strings.Builder
+func (q query) domain() string {
+	var domainParts []string
 	for _, qData := range q.queryData {
-		sb.Write(qData.data)
-		sb.WriteString(".")
+		domainParts = append(domainParts, string(qData.data))
 	}
 
-	return sb.String()
+	return strings.Join(domainParts, ".")
 }
 
-func (q query) RecordType() RecordType {
-	return q.recordType
-}
-
-func (q query) RecordClass() RecordClass {
-	return q.recordClass
+func (q query) string() string {
+	domain := q.domain()
+	return fmt.Sprintf("Domain: %s, RecordType: %v, RecordClass: %v", domain, q.recordType, q.recordClass)
 }
 
 func (q query) toBytes() []byte {
