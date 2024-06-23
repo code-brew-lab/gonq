@@ -3,6 +3,8 @@ package dns
 import (
 	"encoding/binary"
 	"errors"
+	"net"
+	"time"
 )
 
 type answer struct {
@@ -38,4 +40,13 @@ func parseAnswer(bytes []byte) (answer, int, error) {
 	a.data = bytes[answerHeaderSize : answerHeaderSize+int(a.readLength)]
 
 	return a, answerHeaderSize + int(a.readLength), nil
+}
+
+func (a *answer) IP() net.IP {
+	d := a.data
+	return net.IPv4(d[0], d[1], d[2], d[3])
+}
+
+func (a *answer) TTL() time.Duration {
+	return time.Duration(a.ttl*10 ^ 9)
 }

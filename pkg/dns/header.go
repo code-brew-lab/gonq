@@ -17,7 +17,6 @@ type (
 
 	headerBuilder struct {
 		*header
-		errors []error
 	}
 )
 
@@ -40,7 +39,7 @@ func parseHeader(bytes []byte) (*header, error) {
 	id := bytes[:2]
 	flags := bytes[2:4]
 
-	parsedID, err := ParseID(id)
+	parsedID, err := parseID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -64,12 +63,12 @@ func newHeader() *header {
 	return &header{}
 }
 
-func (bh *headerBuilder) SetID(id ID) *headerBuilder {
+func (bh *headerBuilder) setID(id ID) *headerBuilder {
 	bh.id = id
 	return bh
 }
 
-func (bh *headerBuilder) SetFlags(flags *flags) *headerBuilder {
+func (bh *headerBuilder) setFlags(flags *flags) *headerBuilder {
 	if flags == nil {
 		return bh
 	}
@@ -78,60 +77,8 @@ func (bh *headerBuilder) SetFlags(flags *flags) *headerBuilder {
 	return bh
 }
 
-func (bh *headerBuilder) SetQuestionCount(count uint16) *headerBuilder {
-	bh.queryCount = count
-	return bh
-}
-
-func (bh *headerBuilder) SetAnswerCount(count uint16) *headerBuilder {
-	bh.answerCount = count
-	return bh
-}
-
-func (bh *headerBuilder) SetNameServerCount(count uint16) *headerBuilder {
-	bh.nameServerCount = count
-	return bh
-}
-
-func (bh *headerBuilder) SetAdditionalRecordCount(count uint16) *headerBuilder {
-	bh.additionalRecordCount = count
-	return bh
-}
-
-func (bh *headerBuilder) AddError(err error) {
-	bh.errors = append(bh.errors, err)
-}
-
-func (bh *headerBuilder) Build() *header {
+func (bh *headerBuilder) build() *header {
 	return bh.header
-}
-
-func (h *header) ID() ID {
-	return h.id
-}
-
-func (h *header) IsTruncated() bool {
-	return h.flags.isTruncated
-}
-
-func (h *header) IsAuthoritative() bool {
-	return h.flags.isAuthoritative
-}
-
-func (h *header) CanRecursive() bool {
-	return h.flags.canRecursive
-}
-
-func (h *header) ResponseCode() ResponseCode {
-	return h.flags.responseCode
-}
-
-func (h *header) QueryCount() uint16 {
-	return h.queryCount
-}
-
-func (h *header) AnswerCount() uint16 {
-	return h.answerCount
 }
 
 func (h *header) addQuestion() {

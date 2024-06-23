@@ -4,21 +4,24 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/code-brew-lab/gonq/internal/dns"
+	"github.com/code-brew-lab/gonq/pkg/dns"
 )
 
 func main() {
-	req, err := dns.NewRequest("1.1.1.1", 53)
+	args := setupFlags()
+
+	req, err := dns.NewRequest(args.client, 53)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	req.AddQuery("gokhanuysal.net", dns.TypeA, dns.ClassINET)
+	req.AddQuery(args.host, dns.TypeA, dns.ClassINET)
 
 	resp, err := req.Make()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	fmt.Println(resp.ID())
+	fmt.Println(req.Domains())
+	fmt.Println(resp.IPs())
 }

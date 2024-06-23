@@ -9,20 +9,22 @@ import (
 
 type (
 	request struct {
-		addr      *net.UDPAddr
-		header    *header
-		questions []query
+		addr    *net.UDPAddr
+		header  *header
+		queries []query
 	}
 
 	Request interface {
+		Domains() []string
 		AddQuery(domain string, rType RecordType, rClass RecordClass)
 		Make() (Response, error)
+		ToBytes() []byte
 	}
 )
 
 func NewRequest(distIP string, port int) (Request, error) {
 	flags := newFlagsBuilder().SetIsQuery(true).SetIsRecursive(true).Build()
-	header := newHeaderBuilder().SetID(NewID()).SetFlags(flags).Build()
+	header := newHeaderBuilder().setID(newID()).setFlags(flags).build()
 
 	ip := net.ParseIP(distIP)
 	if ip == nil {
@@ -44,8 +46,17 @@ func NewRequest(distIP string, port int) (Request, error) {
 	}, nil
 }
 
+func (r *request) Domains() []string {
+	var domains []string
+	for _, q := range r.queries {
+		domains = append(domains, q.Domain())
+	}
+
+	return domains
+}
+
 func (r *request) AddQuery(domain string, rType RecordType, rClass RecordClass) {
-	r.questions = append(r.questions, newQuery(domain, rType, rClass))
+	r.queries = append(r.queries, newQuery(domain, rType, rClass))
 	r.header.addQuestion()
 }
 
@@ -87,7 +98,7 @@ func (r *request) ToBytes() []byte {
 	var bytes []byte
 
 	header := r.header
-	questions := r.questions
+	questions := r.queries
 
 	bytes = append(bytes, header.toBytes()...)
 	for _, q := range questions {

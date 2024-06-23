@@ -22,17 +22,16 @@ type (
 	}
 )
 
-const flagsSize int = 2
+const FlagsSize int = 2
 
 func newFlagsBuilder() *flagsBuilder {
 	return &flagsBuilder{
 		flags: newFlags(),
 	}
-
 }
 
 func parseFlags(bytes []byte) (*flags, error) {
-	if len(bytes) < flagsSize {
+	if len(bytes) < FlagsSize {
 		return nil, errors.New("flags should be 2 bytes")
 	}
 
@@ -76,18 +75,8 @@ func (fb *flagsBuilder) SetIsQuery(isQuery bool) *flagsBuilder {
 	return fb
 }
 
-func (fb *flagsBuilder) SetOperationCode(operationCode QueryKind) *flagsBuilder {
-	fb.queryKind = operationCode
-	return fb
-}
-
-func (fb *flagsBuilder) SetIsAuthoritative(isAuthoritative bool) *flagsBuilder {
-	fb.isAuthoritative = isAuthoritative
-	return fb
-}
-
-func (fb *flagsBuilder) SetIsTruncated(isTruncated bool) *flagsBuilder {
-	fb.isTruncated = isTruncated
+func (fb *flagsBuilder) SetQueryKind(queryKind QueryKind) *flagsBuilder {
+	fb.queryKind = queryKind
 	return fb
 }
 
@@ -96,18 +85,8 @@ func (fb *flagsBuilder) SetIsRecursive(isRecursive bool) *flagsBuilder {
 	return fb
 }
 
-func (fb *flagsBuilder) SetCanRecursive(canRecursive bool) *flagsBuilder {
-	fb.canRecursive = canRecursive
-	return fb
-}
-
 func (fb *flagsBuilder) SetFutureUse(futureUse uint8) *flagsBuilder {
 	fb.futureUse = futureUse
-	return fb
-}
-
-func (fb *flagsBuilder) SetResponseCode(responseCode ResponseCode) *flagsBuilder {
-	fb.responseCode = responseCode
 	return fb
 }
 

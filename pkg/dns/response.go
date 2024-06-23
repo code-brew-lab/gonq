@@ -3,6 +3,7 @@ package dns
 import (
 	"errors"
 	"fmt"
+	"net"
 )
 
 type (
@@ -15,6 +16,9 @@ type (
 
 	Response interface {
 		ID() ID
+		QueryCount() int
+		AnswerCount() int
+		IPs() []net.IP
 	}
 )
 
@@ -25,22 +29,24 @@ func parseResponse(bytes []byte) (*response, error) {
 	if err != nil {
 		return nil, err
 	}
-	if header.IsTruncated() {
+
+	flags := header.flags
+	if flags.isTruncated {
 		return nil, errors.New("response is truncated")
 	}
-	if respCode := header.ResponseCode(); respCode != CodeNoError {
+	if respCode := flags.responseCode; respCode != CodeNoError {
 		return nil, fmt.Errorf("request responded with status: %s", respCode.CodeText())
 	}
 
 	bytes = bytes[headerSize:]
-	qCount := header.QueryCount()
+	qCount := header.queryCount
 	queries, qBytes, err := parseQueries(bytes, int(qCount))
 	if err != nil {
 		return nil, err
 	}
 
 	bytes = bytes[qBytes:]
-	aCount := header.AnswerCount()
+	aCount := header.answerCount
 	answers, _, err := parseAnswers(bytes, int(aCount))
 	if err != nil {
 		return nil, err
@@ -101,15 +107,24 @@ func parseAnswers(bytes []byte, aCount int) ([]answer, int, error) {
 }
 
 func (r *response) ID() ID {
-	return r.header.ID()
+	return r.header.id
 }
 
-func (r *response) QueryCount() uint16 {
-	return r.header.QueryCount()
+func (r *response) QueryCount() int {
+	return int(r.header.queryCount)
 }
 
-func (r *response) AnswerCount() uint16 {
-	return r.header.AnswerCount()
+func (r *response) AnswerCount() int {
+	return int(r.header.answerCount)
+}
+
+func (r *response) IPs() []net.IP {
+	var ips []net.IP
+	for _, a := range r.answers {
+		ips = append(ips, a.IP())
+	}
+
+	return ips
 }
 
 func copyBytes(bytes []byte) []byte {

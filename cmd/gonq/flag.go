@@ -5,14 +5,17 @@ import (
 )
 
 type cmdArgs struct {
-	host string
+	host   string
+	client string
 }
 
-func setupFlags() (*cmdArgs, error) {
+func setupFlags() *cmdArgs {
 	args := new(cmdArgs)
 
 	flag.StringVar(&args.host, "", "google.com", "name of the domain")
+	flag.StringVar(&args.client, "c", "1.1.1.1", "ip of the dns client")
+
 	flag.Parse()
 
-	return args, nil
+	return args
 }

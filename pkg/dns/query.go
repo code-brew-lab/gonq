@@ -51,6 +51,24 @@ func parseQuery(bytes []byte) (query, int, error) {
 	return q, bytesRead + queryHeaderSize, nil
 }
 
+func (q query) Domain() string {
+	var sb strings.Builder
+	for _, qData := range q.queryData {
+		sb.Write(qData.data)
+		sb.WriteString(".")
+	}
+
+	return sb.String()
+}
+
+func (q query) RecordType() RecordType {
+	return q.recordType
+}
+
+func (q query) RecordClass() RecordClass {
+	return q.recordClass
+}
+
 func (q query) toBytes() []byte {
 	var (
 		bytes []byte
