@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/code-brew-lab/gonq.git/internal/dns"
+	"github.com/code-brew-lab/gonq/internal/dns"
 )
 
 func main() {
