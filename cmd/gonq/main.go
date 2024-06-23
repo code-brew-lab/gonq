@@ -22,6 +22,5 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	fmt.Println(req.Domains())
-	fmt.Println(resp.IPs())
+	fmt.Println(resp.String())
 }

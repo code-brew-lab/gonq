@@ -4,7 +4,7 @@ GOOS ?= $(shell uname)
 GOARCH ?= $(shell arch)
 CGO_ENABLED ?= 0
 
-BIN_NAME = "$(PROJECT_NAME)-$(GOOS)-$(GOARCH)"
+BIN_NAME = "$(PROJECT_NAME)"
 
 SRC_DIR = ./cmd
 BIN_DIR = ./bin

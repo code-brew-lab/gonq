@@ -1,14 +1,14 @@
 package dns
 
-type QueryKind uint8
+type queryKind uint8
 
 const (
-	KindStandard QueryKind = iota
+	kindStandard queryKind = iota
 )
 
-func (qk QueryKind) KindText() string {
+func (qk queryKind) kindText() string {
 	switch qk {
-	case KindStandard:
+	case kindStandard:
 		return "StandardQuery"
 	default:
 		return ""

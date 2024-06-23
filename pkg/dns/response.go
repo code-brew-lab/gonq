@@ -1,58 +1,85 @@
 package dns
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
+	"strings"
 )
 
 type (
-	response struct {
+	Response struct {
 		raw     []byte
-		header  *header
+		header  *Header
 		queries []query
 		answers []answer
 	}
-
-	Response interface {
-		ID() ID
-		QueryCount() int
-		AnswerCount() int
-		IPs() []net.IP
-	}
 )
 
-func parseResponse(bytes []byte) (*response, error) {
+func (r Response) Raw() []byte {
+	return r.raw
+}
+
+func (r Response) Header() *Header {
+	return r.header
+}
+
+func (r Response) IPs() []net.IP {
+	var ips []net.IP
+	for _, a := range r.answers {
+		ips = append(ips, a.ip)
+	}
+
+	return ips
+}
+
+func (r Response) String() string {
+	var queries []string
+	for _, q := range r.queries {
+		queries = append(queries, q.string())
+	}
+
+	var answers []string
+	for _, a := range r.answers {
+		answers = append(answers, a.string())
+	}
+
+	return fmt.Sprintf("Raw: %v\nHeader: %v\nQueries: [%v]\nAnswers: [%v]\n",
+		hex.EncodeToString(r.raw), r.header, strings.Join(queries, ", "), strings.Join(answers, ", "))
+}
+
+func parseResponse(bytes []byte) (*Response, error) {
 	raw := copyBytes(bytes)
 
-	header, err := parseHeader(bytes)
+	header, err := ParseHeader(bytes)
 	if err != nil {
 		return nil, err
 	}
 
-	flags := header.flags
-	if flags.isTruncated {
+	flags := header.Flags()
+	if flags.IsTruncated() {
 		return nil, errors.New("response is truncated")
 	}
-	if respCode := flags.responseCode; respCode != CodeNoError {
+	if respCode := flags.ResponseCode(); respCode != CodeNoError {
 		return nil, fmt.Errorf("request responded with status: %s", respCode.CodeText())
 	}
 
-	bytes = bytes[headerSize:]
-	qCount := header.queryCount
+	bytes = bytes[HeaderSize:]
+	qCount := header.QueryCount()
 	queries, qBytes, err := parseQueries(bytes, int(qCount))
 	if err != nil {
 		return nil, err
 	}
 
 	bytes = bytes[qBytes:]
-	aCount := header.answerCount
+	aCount := header.AnswerCount()
 	answers, _, err := parseAnswers(bytes, int(aCount))
 	if err != nil {
 		return nil, err
 	}
 
-	return &response{
+	return &Response{
 		raw:     raw,
 		header:  header,
 		queries: queries,
@@ -104,27 +131,6 @@ func parseAnswers(bytes []byte, aCount int) ([]answer, int, error) {
 	}
 
 	return answers, read, nil
-}
-
-func (r *response) ID() ID {
-	return r.header.id
-}
-
-func (r *response) QueryCount() int {
-	return int(r.header.queryCount)
-}
-
-func (r *response) AnswerCount() int {
-	return int(r.header.answerCount)
-}
-
-func (r *response) IPs() []net.IP {
-	var ips []net.IP
-	for _, a := range r.answers {
-		ips = append(ips, a.IP())
-	}
-
-	return ips
 }
 
 func copyBytes(bytes []byte) []byte {
