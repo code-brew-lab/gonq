@@ -63,7 +63,7 @@ func (q query) domain() string {
 
 func (q query) string() string {
 	domain := q.domain()
-	return fmt.Sprintf("Domain: %s, RecordType: %v, RecordClass: %v", domain, q.recordType, q.recordClass)
+	return fmt.Sprintf("Domain: %s, RecordType: %s, RecordClass: %s", domain, q.recordType.TypeText(), q.recordClass.ClassText())
 }
 
 func (q query) toBytes() []byte {

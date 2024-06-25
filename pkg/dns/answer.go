@@ -43,6 +43,6 @@ func parseAnswer(bytes []byte) (answer, int, error) {
 }
 
 func (a answer) string() string {
-	return fmt.Sprintf("CompressionType: %d, Offset: %d, TTL: %d, ReadLength: %d, IP: %v",
+	return fmt.Sprintf("CompressionType: %d, Offset: %d, TTL: %ds, ReadLength: %d, IP: %v",
 		a.compressionType, a.offset, a.ttl, a.readLength, a.ip)
 }
