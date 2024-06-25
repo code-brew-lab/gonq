@@ -26,6 +26,18 @@ Perform a DNS query by:
 ```sh
 gonq -d google.com
 ```
+Response:
+```sh
+Raw: e0808180000100010000000006676f6f676c6503636f6d0000010001c00c0001000100000e100004d8ef2678
+Header: ID: 57472
+        Flags: IsQuery: false, QueryKind: StandardQuery, IsAuthoritative: false, IsTruncated: false, IsRecursive: true, CanRecursive: true, ResponseCode: NoError
+        QDCount: 1
+        ANCount: 1
+        NSCount: 0
+        ARCount: 0
+Queries: [Domain: google.com, RecordType: A, RecordClass: InternetAddress]
+Answers: [CompressionType: 12, Offset: 12, TTL: 65537s, ReadLength: 4, IP: 216.239.38.120]
+```
 #### Go Module
 Example usage of go module:
 ```go
